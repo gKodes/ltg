@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>&lt;t&gt; - Test P (Promise)</title>
+  </head>
+  <body>
+    <script type="text/javascript" src="js/P.js"></script>
+    
+    <script type="text/javascript">
+      describe('ltg Promises', function() {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
+
+        it('invoke resolve async', function(done) {
+          var deferred = P(function(resolve, reject, notify) {
+            setTimeout(function() { resolve(); }, 1000);
+          });
+          deferred.then(function() { expect(true).toBe(true); done(); });
+        });
+
+        it('invoke reject async', function(done) {
+          var deferred = P(function(resolve, reject, notify) {
+            setTimeout(function() { reject(); }, 1000);
+          });
+          deferred.then(undefined, function() { expect(true).toBe(true); done(); });
+        });
+
+        it('invoke catch async', function(done) {
+          var deferred = P(function(resolve, reject, notify) {
+            setTimeout(function() { reject(); }, 1000);
+          });
+          deferred['catch'](function() { expect(true).toBe(true); done(); });
+        });
+
+        it('invoke motify multiple times', function(done) {
+          var deferred = P(function(resolve, reject, notify) {
+            var i = 0,
+            intervalId = setInterval(function() {
+              notify(++i, intervalId);
+            }, 500);
+          });
+          deferred.then(undefined, undefined, function() {
+            if(arguments[0] > 9) {
+              expect(arguments[0]).toBe(10);
+              done(clearInterval(arguments[1]));
+            }
+          });
+        });
+
+        it('invoke a resolved promise', function(done) {
+          var deferred = P.resolve('Success');
+          deferred.then(function(message) {
+            expect(message).toEqual('Success');
+            done();
+          });
+        });
+
+        it('invoke a rejected promise', function(done) {
+          var deferred = P.reject('Success');
+          deferred.then(undefined, function(message) {
+            expect(message).toEqual('Success');
+            done();
+          });
+        });
+
+        describe('Chain execution', function() {
+          it('invoke resolve', function(done) {
+            var deferred =  P(function(resolve, reject, notify) {
+              setTimeout(function() { resolve(new Date(), 'First'); }, 1000);
+            });
+            deferred.then(function(date) {
+              return new P(function(resolve, reject, notify) {
+                setTimeout(function() { resolve(date, 'Second'); }, 1000);
+              });
+            });
+            deferred.then(function(date, location) {
+              expect(date.getTime()).toBeLessThan(new Date().getTime());
+              expect(location).toMatch('Second');
+              done();
+            });
+          });
+
+          it('invoke catch', function(done) {
+            var deferred =  P(function(resolve, reject, notify) {
+              setTimeout(function() { resolve(new Date(), 'First'); }, 1000);
+            });
+            deferred.then(function(date) {
+              return new P(function(resolve, reject, notify) {
+                setTimeout(function() { reject(date, 'Second'); }, 1000);
+              });
+            });
+            deferred['catch'](function(date, location) {
+                expect(date.getTime()).toBeLessThan(new Date().getTime());
+                expect(location).toMatch('Second');
+                done();
+            });
+          });
+
+        }); // Chain execution
+
+      });
+    </script>
+  </body>
+</html>

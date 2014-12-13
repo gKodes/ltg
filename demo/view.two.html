@@ -1,0 +1,15 @@
+<h2>This the Second View</h2>
+<h3>Submit the form using AJAX</h3>
+<strong>See the HTTP request headers on submit of the form</strong>
+<br/>
+<remote-render ref="#view-l" type="html">
+  <ajax-get url="view.two.html" auto="false">
+  	<header name="X-Custom3">Sample</header>
+    <form>
+      <input name="user" type="text" placeholder="Username">
+      <input name="pass" type="password" placeholder="password">
+      <button is="ltg-remote-submit" type="submit">Submit</button>
+    </form>
+  </ajax-get>
+</remote-render>
+<br/>

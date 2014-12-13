@@ -1,0 +1,25 @@
+{
+  "name": "ltg",
+  "version": "0.0.0",
+  "description": "",
+  "main": "gulp.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/gKodes/ltg.git"
+  },
+  "author": "",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/gKodes/ltg/issues"
+  },
+  "devDependencies": {
+    "gulp": "~3.8.8",
+    "through2": "~0.6.3",
+    "gulp-util": "~3.0.1",
+    "gulp-mocha": "~1.1.1",
+    "gulp-copy": "0.0.2"
+  }
+}

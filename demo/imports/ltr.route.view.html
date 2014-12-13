@@ -1,0 +1,105 @@
+<html>
+  <head>
+    <title>ltg - Route View Element</title>
+    <link rel="import" href="ltr.remote.html">
+  </head>
+  <body>
+    <script type="text/javascript">
+      (function(){
+        ltg.element('ltgDataSrc', function() {
+          this.noShadow = true;
+          
+          this.controller(function($element, $attrs) {
+            /*
+             * Either set or get the data some what like backbone.js model
+             */
+            this.data = function(attribute, value) {
+              //on value change fire an event which whatches the data
+            };
+
+            this.watch = function(attribute, fn) {};
+          });
+
+          this.link(function(element, attrs, ltgDataSrc) {
+            // TODO: Watch for 'keydown', 'change' events for all the inside input elements
+            // so we map back to the data
+            // element.addEventListener()
+          }, ['^?ltgDataSrc']);
+        });
+      });
+    </script>
+
+    <!-- 
+      https://developer.mozilla.org/en-US/docs/Introduction_to_using_XPath_in_JavaScript
+
+      xpath query for selecting the attributes needs to be watched
+      $x('//@*[contains(., \'{{\') or contains(name(.), \'{{\')]/..')
+
+      xpath query selecting the elements which have binding varibles in them
+      $x('//*[contains(text(),\'{{\')]')
+
+      Select all nodes where we have to bind
+      $x('//*[contains(text(),\'{{\') or @*[contains(., \'{{\') or contains(name(.), \'{{\')]]')
+
+
+      var pr = document.evaluate('//*[contains(text(),\'{{\') or @*[contains(., \'{{\') or contains(name(.), \'{{\')]]', document, null, 7, null)
+
+      pr.snapshotLength
+
+      pr.snapshotItem(3)
+    -->
+
+    <script type="text/javascript">
+      (function(){
+        ltg.element('ltgView', ['ltgDataSrc'], function() {
+          this.noShadow = true;
+          
+          this.controller(function($element, $attrs) {
+            this.content = function() {};
+
+            D.bind($element, 'content', this.content);
+          });
+
+          this.link(function(element, attrs, ltgView) {
+            D.bind($element, 'data', ltgView.data);
+          });
+        });
+      });
+    </script>
+
+    <script type="text/javascript">
+      (function(){
+        ltg.element('ltgRepeat', ['ltgDataSrc'], function() {
+          this.noShadow = true;
+          
+          this.controller(function($element, $attrs) {
+            this.content = function() {};
+
+            D.bind($element, 'content', this.content);
+          });
+
+          this.link(function(element, attrs, ltgDataSrc) {
+            attrs.$get('on');
+            ltgDataSrc.data()
+          }, ['^ltgDataSrc']);
+        });
+      });
+    </script>
+
+    <script type="text/javascript">
+      (function(){
+        ltg.element('ltgView', function() {
+          this.noShadow = true;
+          
+          this.controller(function($element, $attrs) {
+            this.content = function() {};
+
+            D.bind($element, 'content', this.content);
+          });
+        });
+      });
+    </script>
+
+
+  </body>
+</html>

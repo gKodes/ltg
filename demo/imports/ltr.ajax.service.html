@@ -1,0 +1,110 @@
+<html>
+  <head>
+    <title>ltg - AJAX Service</title>
+  </head>
+  <body>
+    <script type="text/javascript">
+      (function() {
+        ltg.provider('$ajax', ['$p', function($p) {
+          var globalSettings = {type: 'GET'},
+              methods = {
+                GET: function() {
+                  this.data = '';
+                  this.append = function() {
+                    this.data += (!param? '' : '&') +
+                              encodeURIComponent(name) + '=' +
+                              encodeURIComponent(
+                                arguments[arguments.length - 1]);
+                  };
+                },
+                POST: function() {
+                  this.data = new FormData();
+                  this.append = function() {
+                    this.data.append.apply(this.data.append, arguments);
+                  };
+                }
+              };
+
+          function onEvent(fn) {
+            return function onEvent(evt) {
+              fn(evt.target.response, evt.target.status, evt.target);
+            };
+          };
+
+          function ltrAjax() {};
+          
+          ltrAjax.prototype = {
+            request: function(url, settings) {
+              settings = D.extend({}, globalSettings, this.settings, settings);
+
+              return $p(function(resolve, reject, notify) {
+                var request = new XMLHttpRequest(),
+                    method;
+
+                function onLtgAjaxError(evt) {
+                  reject(evt.target.response, evt.target.status, evt.target);
+                };
+
+                this.abort = function() { request.abort(); };
+
+                request.addEventListener('progress', function onLtgAjaxEProgress(evt) {
+                  notify(evt.loaded, evt.total, evt.target);
+                }, false);
+                request.addEventListener('load', function onLtgAjaxELoad(evt) {
+                  (evt.target.status == 200? resolve : reject)
+                      (evt.target.response, evt.target.status, evt.target);
+                }, false);
+                request.addEventListener('abort', onLtgAjaxError, false);
+                request.addEventListener('error', onLtgAjaxError, false);
+
+                if( settings.data && methods[settings.type] ) {
+                  D.forEach(settings.data, function(value, key) {
+                    if( D.isElement(value) ) {
+                      this.append(( (parseInt(key) === NaN)? key : value.name ),
+                        value, value.value);
+                    } else { this.append(key, value); }
+                  }, (method = new methods[settings.type]()));
+
+                  if(settings.type === 'GET' && method.data) {
+                    url = url + '?' + method.data;
+                    delete method.data;
+                  }
+                }
+
+                //INFO: Open the rerquest so we can added headers
+                request.open(settings.type, url, true,
+                  settings.user, settings.password);
+
+                D.forEach(settings.headers, function(value, name) {
+                  request.setRequestHeader(name, value);
+                });
+
+                request.send(method && method.data);
+              });
+            },
+            post: function(url, settings) {
+              return this.request(url, 
+                D.extend(settings, {type: 'POST'}));
+            },
+            get: function(url, settings) {
+              return this.request(url, 
+                D.extend(settings, {type: 'GET'}));
+            }
+          };
+
+          this.settings = function(settings) {
+            return (globalSettings = D.extend(globalSettings, settings));
+          };
+
+          this.methods = function(method) {
+            return (methods = D.extend(methods, method));
+          };
+
+          this.$get = function() {
+            return new ltrAjax();
+          };
+        }]);
+      })()
+    </script>
+  </body>
+</html>
