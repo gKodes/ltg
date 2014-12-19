@@ -103,12 +103,13 @@
                         D.isDomObj(viewSrc)? view.appendChild(viewSrc) :
                           view.innerHTML = viewSrc; // TODO: Security Validataion of the content
 
+                    //TODO: Invoke Event for Route Change Success
                     if(paths[i].controller) {
                       $controller.invoke(paths[i].controller, 
                         D.extend({}, route.resolve, {'$routeParams': $route.routeParams}))
                       .then(function(linkFn) {
                         linkFn(view);
-                        view.setAttribute('loading', 'false');z
+                        view.setAttribute('loading', 'false');
                       });
                     } else {
                       view.setAttribute('loading', 'false');
@@ -122,7 +123,11 @@
             }
           }
 
-          D.on(window, 'popstate', function(evt) {
+          window.addEventListener('popstate', function(evt) {
+            changeState(location.hash.substr(1));
+          });
+
+          document.addEventListener('ltgLoaded', function() {
             changeState(location.hash.substr(1));
           });
 
@@ -160,8 +165,6 @@
           };
 
           this.$get = $route;
-          
-          //$controller.invoke('', {}).then(function(linkFn) { linkFn(/*View Element*/); });
         }]);
       })();
     </script>

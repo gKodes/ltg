@@ -1,0 +1,43 @@
+<html>
+  <head>
+    <title>ltg - Route View.$parse Service</title>
+  </head>
+  <body>
+    <script type="text/javascript">
+      /**
+       * @service $parse
+       * TODO: Need to improve
+       */
+      (function(){
+        'use strict';
+        ltg.provider('$parse', function() {
+          var EXP_REGEX = /([^a-z0-9]*)([^\[\.\(]+)(\S*)/ig,
+              BEACE_EPLACE = /[\{\^\}]+/g;
+
+          function expCompile(all, pre, match, post) {
+            return pre + 'ds.' + match + post;
+          }
+
+          function definePath(ds, path) {
+            return '';
+          }
+
+          function $parse(exp) {
+            // Use a sourceURL for easier debugging.
+            // See http://www.html5rocks.com/en/tutorials/developertools/sourcemaps/#toc-sourceurl.
+            var sourceURL = '//# sourceURL=/ltg/$parse/getter\n';
+
+            exp = exp.replace(BEACE_EPLACE, '');
+            return new Function('ds', sourceURL + 'try { return ' + 
+                exp.replace(EXP_REGEX, expCompile) + 
+                ' || ""; } catch(error) { /*console.info(error, "' + exp.replace(/[\r\n]+/g, '') + '");*/ } return "";');
+          }
+
+          this.$get = function() {
+            return $parse;
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

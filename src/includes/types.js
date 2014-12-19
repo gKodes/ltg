@@ -135,3 +135,5 @@ function isElement(node) {
 function isDomObj(elm) {
 return (isElement(elm) || elm.constructor == Window);
 }
+
+function noop() {}	

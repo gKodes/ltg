@@ -1,0 +1,143 @@
+<html>
+  <head>
+    <title>ltg - Route View.$data Service</title>
+    <link rel="import" href="ltg.service.context.html">
+    <link rel="import" href="ltg.service.watch.html">
+    <script type="text/javascript" src="nodeIteator.js"></script>
+  </head>
+  <body>
+    <script type="text/javascript">
+      /**
+       * @provider $context.$dataProvider
+       */
+      (function(){
+        'use strict';
+        ltg.provider('$context.$data', function() {
+        var dataBinders = {},
+            DATA_NODE_REGEX = /^data-(.+)/;
+
+        var DataNodes = nodeIterator(
+          function hasBinding(element) {
+            var adx = 0, attr;
+            while ((attr = element.attributes[adx++])) {
+              if ( attr.name && attr.name.match(DATA_NODE_REGEX) ) {
+                return true;
+              }
+            }
+          }
+        );
+
+
+          /*$dataProvider
+          data-if
+          data-context
+          data-hide
+          data-show
+          data-init
+          data-attr-*
+          data-value*/
+          // .match('data-if')
+
+          var $data;
+
+          this.bind = function(name, binderfn) {
+            if(dataBinders[name]) { throw 'Binder already exists'; }
+            return dataBinders[name] = binderfn;
+          };
+
+          function binder(name) {
+            for(var binding in dataBinders) {
+              if( name.match(binding) ) {
+                return dataBinders[binding];
+              }
+            }
+          }
+
+          //Think about how to prevent binding more then once
+          ltg.config(['$context', '$watch', function($context, $watch) {
+            $data = function(element) {
+              var dataNodes = new DataNodes(element), nodes = [];
+              
+              // NOTE: Need to do this as the interator would break if we change the dom while looping
+              while( nodes.push(dataNodes.iterateNext()) === 1 );
+
+              D.forEach(nodes, function(node) {
+                D.forEach(node.attributes, function(attr) {
+                  var nameMatch, binderfn;
+                  if( nameMatch = attr.name.match(DATA_NODE_REGEX) ) {
+                    if( (binderfn = binder(nameMatch[1])) && attr.value ) {
+                      binderfn(node, attr.value);
+                    }
+                  }
+                });
+              });
+
+            };
+          }]);
+
+          this.$get = function() { return $data; };
+        });
+      })();
+    </script>
+    <!-- data-if -->
+    <script type="text/javascript">
+      /**
+       * @provider $context.$dataProvider@bind#if
+       */
+      (function(){
+        'use strict';
+        ltg.config(['$context', '$context.$dataProvider', '$watch', '$parse',
+            function($context, $dataProvider, $watch, $parse) {
+          $dataProvider.bind('if', function(node, condition) {
+            //TODO: remove the node, add a watch
+            var parentNode = node.parentNode,
+                watchfn = $parse(condition);
+            
+            $watch(parentNode, watchfn, function(value) {
+              if(value) { parentNode.appendChild(node); }
+              else if(node.parentNode) { parentNode.removeChild(node); }
+            });
+
+            // For the first time check
+            if(!watchfn($context(node))) { parentNode.removeChild(node); }
+          });
+        }]);
+      })();
+    </script>
+    <!-- -->
+    <script type="text/javascript">
+      /**
+       * @provider $context.$dataProvider@bind#init
+       */
+      (function(){
+        'use strict';
+        ltg.config(['$context', '$context.$dataProvider', '$parse',
+            function($context, $dataProvider, $parse) {
+          $dataProvider.bind('init', function(node, initExp) {
+            $parse(initExp)($context(node));
+          });
+        }]);
+      })();
+    </script>
+    <!-- -->
+    <script type="text/javascript">
+      /**
+       * @provider $context.$dataProvider@bind#context
+       */
+      (function(){
+        'use strict';
+        ltg.config(['$context', '$context.$dataProvider', '$parse',
+            function($context, $dataProvider, $parse) {
+          $dataProvider.bind('context', function(node, initExp) {
+          /* TODO: Go down all the children and create there respective contexts
+           * based on the data-context attribute to which $parent varible context
+           * it needs to be bound
+           */
+            
+            $context(node, $parse(initExp)($context(node.parentNode)));
+          });
+        }]);
+      });
+    </script>
+  </body>
+</html>

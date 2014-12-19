@@ -1,0 +1,42 @@
+<html>
+  <head>
+    <title>ltg - highlight.js binding Library</title>
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/railscasts.min.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js"></script>
+  </head>
+  <body>
+    <script type="text/javascript">
+      (function() {
+        'use strict';
+        var HTML_ENCODING_MAP = {'&': '&amp;', '"': '&quot;', '\'': '&#39', '<': '&lt;','>': '&gt;'};
+        function htmlEncoding(html) {
+          return html.replace(/[&"'\<\>]/g, function(chr) {
+            return HTML_ENCODING_MAP[chr];
+          });
+        }
+
+        function trim(str) {
+          return str.replace(/^\s+|\s+$/g, '');
+        }
+      
+        ltg.element('ltgHighlight', ['HTMLPreElement'], function() {
+          return {
+            noShadow: true,
+            link: function(element, attrs) {
+              if( attrs.class === 'xml' ) {
+                for(var n = 0; n < element.childNodes.length; n++) {
+                  if( element.childNodes[n].nodeType === 8 ) {
+                    element.innerHTML = htmlEncoding(
+                      trim(element.childNodes[n].data));
+                    break;
+                  }
+                }
+              } else { element.innerHTML = htmlEncoding(element.innerText); }
+              hljs.highlightBlock(element);
+            }
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

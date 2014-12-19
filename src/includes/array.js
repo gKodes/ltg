@@ -33,7 +33,7 @@ var slice = Array.prototype.slice;
 function toArray(dst) {
   forEach(arguments, function(src) {
     if(src !== dst && src) {
-      if(!isFunction(src) && isNumber(src.length)) {
+      if(!isFunction(src) && !isString(src) && isNumber(src.length)) {
         if(src.length) { apply(push, this, src); }
       } else { Array.prototype.push.call(this, src); }
     }

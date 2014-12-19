@@ -1,0 +1,48 @@
+<html>
+  <head>
+    <title>ltg - $data Service</title>
+  </head>
+  <body>
+    <script type="text/javascript">
+      (function() {
+        ltg.config(function() {
+          function nextId(id) { return ++id; }
+
+          function data(attrId, uid) {
+            var dataCache = {};
+            
+            this.get = function(element, attribute) {
+              var id = element.getAttribute(attrId);
+              if( id && dataCache[id] ) {
+                return attribute? dataCache[id][attribute] : dataCache[id];
+              }
+            };
+
+            this.set = function(element, attribute, value) {
+              var id = element.getAttribute(attrId);
+              if(!id) {
+                element.setAttribute( attrId, (id = (uid = nextId(uid || 0) ) ) );
+              }
+              if( id && (dataCache[id] || (dataCache[id] = {})) ) {
+                if(!value) { return dataCache[id] = attribute; }
+                return dataCache[id][attribute] = value;
+              }
+            };
+
+            this.clean = function(element, attribute) {
+              var id = element.getAttribute(attrId);
+              if(id && dataCache[id]) {
+                if(attribute) { delete dataCache[id][attribute]; }
+                else { delete dataCache[id]; }
+              }
+            };
+
+            this.clone = function(element) {}
+          }
+
+          ltg.constant('$data', function(attrId, uid) { return new data(attrId || 'data-ltg', uid) })
+        });
+      })();
+    </script>
+  </body>
+</html>

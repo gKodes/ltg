@@ -1,0 +1,76 @@
+<html>
+  <head>
+    <title>ltg - Route View.$digest Service</title>
+    <link rel="import" href="ltg.service.compile.html">
+    <link rel="import" href="ltg.service.context.html">
+  </head>
+  <body>
+    <script type="text/javascript">
+      /**
+       * @service $digest
+       */
+      (function(){
+        'use strict';
+        ltg.config(['$compile', '$context', '$boundNodes', function($compile, $context, boundNodes) {
+          var $data = $compile.$data;
+
+          function $digest(element) {
+            element.dispatchEvent( new CustomEvent('$digest', 
+              { bubbles: true, detail: $context(element) }) );
+          }
+
+          /**
+           * Stops the digest event from exiting this element.
+           */
+          $digest.prevent = function(element) {
+            //
+          };
+
+          $digest.$root = function(element) {
+            //TODO: add event listner for handling the $digest event.
+            // node.addEventListner('$digest', function() {})
+            // when event.defaultPrevented is set do not execute the digest
+            var digestTimer;
+            element.addEventListener('$digest', function(evt) {
+              if( !evt.defaultPrevented ) {
+                evt.preventDefault();
+
+                digestTimer = setTimeout(function() {
+                  var $$dt = digestTimer,
+                      nodes = boundNodes(element),
+                      node;
+                  
+                  while( $$dt === digestTimer &&
+                      (node = nodes.pop()) ) {
+                    // TODO: Do not digest on a element if it has .off-digest class
+                    if( !node.parentNode ) { continue; } // Removed Nodes at the time of digest
+                    
+                    var context, $$watchs;
+                    if( ( $$watchs = $data.get(node, '$$watchs') ) && $$watchs.length ) {
+                      context = $context(node);
+
+                      var value, watchs = $$watchs.length;
+                      for(var idx = 0; $$dt === digestTimer && idx < watchs; idx++) {
+                        try {
+                          if( $$watchs[idx].recent !== (value = $$watchs[idx].watchfn(context)) ) {
+                            if($$watchs[idx].fn) { $$watchs[idx].fn(value, $$watchs[idx].recent, context, node); }
+                            $$watchs[idx].recent = value;
+                          }
+                        } catch(error) { console.info(error); }
+                      }
+                    }
+                  
+                  } // Digest Outer Loop (node)
+
+                  console.info('$digest ' + $$dt + ' ended, running $$' + digestTimer);
+                }, 100);
+              }
+            })
+          }
+
+          ltg.constant('$digest', $digest);          
+        }]);
+      })();
+    </script>
+  </body>
+</html>

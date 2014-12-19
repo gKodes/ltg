@@ -1,16 +1,16 @@
 <html>
   <head>
     <title>ltg - AJAX Library</title>
-    <link rel="import" href="ltr.remote.html">
-    <link rel="import" href="ltr.ajax.service.html">
+    <link rel="import" href="ltg.remote.html">
+    <link rel="import" href="ltg.ajax.service.html">
     <style type="text/css">
-      ltr-ajax header, ajax-get header, ajax-post header { display: none; }
+      ltg-ajax header, ajax-get header, ajax-post header { display: none; }
     </style>
   </head>
   <body>
     <script type="text/javascript">
       (function() {
-        ltg.element('ltrAjax', ['ltgRemote'], ['$ajax', function($ajax) {
+        ltg.element('ltgAjax', ['ltgRemote'], ['$ajax', function($ajax) {
           return {
             noShadow: true,
             controller: [function($element, $attrs) {    
@@ -62,7 +62,7 @@
                 D.forEach( D.findAll($element, ':scope > data'),
                   function(data) {
                     settings.data[D.attr(data, 'name')] =
-                      D.attr(data, 'value') || data.innerText;
+                      D.attr(data, 'value') || data.data || data.innerText;
                   }
                 );
 
@@ -77,11 +77,11 @@
                 return settings;
               };
             },
-            link: ['^ltrAjax', function(element, attrs, ctrls) {
+            link: ['^ltgAjax', function(element, attrs, ctrls) {
               attrs.$observer('send', function(value) {
-                if(value === 'true' && ctrls.ltrAjax.request) {
+                if(value === 'true' && ctrls.ltgAjax.request) {
                   //TODO: Need to register events
-                  element.promise = ctrls.ltrAjax.request(element.url, 
+                  element.promise = ctrls.ltgAjax.request(element.url, 
                     ctrls.ajaxRequest.build()).then(
                       function(data) {
                         attrs.$set('send', false);

@@ -1,0 +1,67 @@
+<html>
+  <head>
+    <title>ltg - Route View.$link Service</title>
+    <link rel="import" href="ltg.service.compile.html">
+    <link rel="import" href="ltg.service.watch.html">
+    <link rel="import" href="ltg.service.context.html">
+  </head>
+  <body>
+    <script type="text/javascript">
+      /**
+       * @service $link
+       */
+      (function(){
+        'use strict';
+        var TEXT_NODE = 3,
+            FIRST_ORDERED_NODE_TYPE = 9;
+
+        function $x(path, contextNode) {
+          var xresult = document.evaluate(path, contextNode, null, FIRST_ORDERED_NODE_TYPE, null);
+          return xresult.singleNodeValue;
+        }
+
+        function $set(node, value) {
+          return node[node.nodeType === TEXT_NODE? 'nodeValue': 'value'] = value;
+        }
+
+        ltg.config(['$compile', '$watch', '$context', '$boundNodes', function($compile, $watch, $context, boundNodes) {
+          var $data = $compile.$data
+
+          function $link(element, ltgDataSrc) {
+            //element.querySelectorAll('[ltr-bound]')
+            //D.toArray()
+            D.forEach(boundNodes(element), function(node) {
+              if( !D.hasClass(node, 'ltg-link') ) {
+                var binds = $data.get(node, '$$bound'),
+                    nodeValue = $data.get(node, '$$bound.nodeValue'),
+                    context = $context(node);
+                
+                if(nodeValue) {
+                  node.innerText = nodeValue(context); // var remove = 
+                  if(nodeValue.watch) {
+                    $watch(node, nodeValue, function(value) {
+                      node.innerText = value;
+                    });
+                  }
+                }
+
+                D.forEach(binds, function(getter, attrName) {
+                  node.setAttribute(attrName, getter(context));
+                  if(getter.watch) {
+                    $watch(node, getter, function(value) {
+                      node.setAttribute(attrName, value);
+                    });
+                  }
+                });
+
+                D.addClass(node, 'ltg-link');
+              }
+            });
+          }
+
+          ltg.constant('$link', $link);
+        }]);
+      })();
+    </script>
+  </body>
+</html>

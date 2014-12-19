@@ -137,6 +137,8 @@ function isElement(node) {
 function isDomObj(elm) {
 return (isElement(elm) || elm.constructor == Window);
 }
+
+function noop() {}	
   //array.js
 
 
@@ -171,7 +173,7 @@ var slice = Array.prototype.slice;
 function toArray(dst) {
   forEach(arguments, function(src) {
     if(src !== dst && src) {
-      if(!isFunction(src) && isNumber(src.length)) {
+      if(!isFunction(src) && !isString(src) && isNumber(src.length)) {
         if(src.length) { apply(push, this, src); }
       } else { Array.prototype.push.call(this, src); }
     }
@@ -293,8 +295,10 @@ function extend(dst) {
         if( isArray(value) ) {
           Array.prototype.push.apply( 
             ( dst[key] = isArray(dst[key])? dst[key] : [] ), value );
+        } else if(isArray(dst[key])) {
+          dst[key].push(value);
         } else if( isPO(value) ) {
-          dst[key] = extend(isObject(dst[key])? value: undefined, value);
+          dst[key] = extend((isObject(dst[key]) && dst[key]), value);
         }
         else { dst[key] = value; }
       });

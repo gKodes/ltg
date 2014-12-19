@@ -1,9 +1,9 @@
 <html>
   <head>
     <title>ltg - Path Route Library</title>
-    <link rel="import" href="ltr.remote.html">
-    <link rel="import" href="ltr.route.service.html">
-    <link rel="import" href="ltr.route.view.html">
+    <link rel="import" href="ltg.remote.html">
+    <link rel="import" href="ltg.route.service.html">
+    <link rel="import" href="ltg.route.view.html">
   </head>
   <body>
     <script type="text/javascript">
@@ -49,6 +49,8 @@
           return dst;
         }
 
+        var ROUTE_PATH_PARAM = /\{[a-z#\$][a-z0-9_\-#\$]+\}/ig;
+
         ltg.element('ltgRoute', ['$routeProvider', '$route', function($routeProvider, $route) {
           return {
             noShadow: true,
@@ -58,6 +60,14 @@
               this.remove = function() {};
             },
             link: ['^ltgRemote', '^?ltgRoute', function(element, attrs, ctrls) {
+              function request(url, routeParams) {
+                return ctrls.ltgRemote.request(
+                  url.replace(ROUTE_PATH_PARAM, function(param) {
+                    return routeParams[param];
+                  })
+                );
+              }
+
               ctrls.ltgRoute.path = attrs.path || $route.path;
               
               // join((ctrls['^ltgRoute'] && ctrls['^ltgRoute'].path), attrs.path);
@@ -68,11 +78,28 @@
               }
               
               if( attrs.template && attrs.path ) {
-                ctrls.ltgRoute.remove = $routeProvider.when(ctrls.ltgRoute.path, {
+                var routePath = 
+                {
                   view: ctrls.ltgRoute.view,
-                  template: ctrls.ltgRemote.request(attrs.template), // Pre-fetch the template
-                  controller: attrs.controller
-                });
+                  controller: attrs.controller,
+                  template: ROUTE_PATH_PARAM.test(attrs.template)?
+                    function(routeParams) { return request(attrs.template, routeParams); } :
+                      ctrls.ltgRemote.request(attrs.template), // Pre-fetch the template
+                  resolve: {}
+                };
+                
+                D.forEach(
+                  element.querySelectorAll(':scope > resolve'),
+                  function(node) {
+                    if(node.name && node.getAttribute('url')) {
+                      routePath.resolve[node.name] = ['$routeParams', function($routeParams) {
+                        return request(node.getAttribute('url'), $routeParams);
+                      }];
+                    }
+                  }
+                );
+
+                ctrls.ltgRoute.remove = $routeProvider.when(ctrls.ltgRoute.path, routePath);
               }
             }],
             unlink: function(element, attrs, ltgRoute) {

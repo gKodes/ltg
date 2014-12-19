@@ -1,0 +1,47 @@
+<html>
+  <head>
+    <title>ltg - Route View.$watch Service</title>
+    <link rel="import" href="ltg.service.compile.html">
+    <link rel="import" href="ltg.service.parse.html">
+  </head>
+  <body>
+    <script type="text/javascript">
+      /**
+       * @service $watch
+       */
+      (function(){
+        'use strict';
+        ltg.config(['$compile', '$parse', function($compile, $parse) {
+          var $data = $compile.$data,
+              wad = 0;
+
+          function $watch(element, watchfn, fn) {
+            var $$watchs;
+            if( D.isString(watchfn) ) { watchfn = $parse(watchfn); }
+
+            if( ( $$watchs = ( $data.get(element, '$$watchs') || 
+                    $data.set(element, '$$watchs', []) ) ) ) {
+              $$watchs.push({
+                watchfn: watchfn,
+                fn: fn,
+                $$wad: ++wad
+              });
+            }
+            
+            D.addClass(element, 'ltg-watch');
+            return wad;
+          }
+
+          $watch.$rm = function(element, wad) {
+            var $$watchs;
+            if( wad && ( $$watchs = $data.get(element, '$$watchs') ) ) {
+              //TODO: remove the given watch with wad
+            } else { $data.clean(element, '$$watchs'); }
+          };
+
+          ltg.constant('$watch', $watch); 
+        }]);
+      })();
+    </script>
+  </body>
+</html>

@@ -13,8 +13,10 @@ function extend(dst) {
         if( isArray(value) ) {
           Array.prototype.push.apply( 
             ( dst[key] = isArray(dst[key])? dst[key] : [] ), value );
+        } else if(isArray(dst[key])) {
+          dst[key].push(value);
         } else if( isPO(value) ) {
-          dst[key] = extend(isObject(dst[key])? value: undefined, value);
+          dst[key] = extend((isObject(dst[key]) && dst[key]), value);
         }
         else { dst[key] = value; }
       });

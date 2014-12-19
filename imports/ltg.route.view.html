@@ -1,0 +1,66 @@
+<html>
+  <head>
+    <title>ltg - Route View Element</title>
+    <link rel="import" href="ltg.data.service.html">
+    <link rel="import" href="ltg.view/import.html">
+  </head>
+  <body>
+    <script type="text/javascript">
+      (function() {
+        var NO_DATA = '',
+            INPUT_TAGS = ['input', 'select', 'textarea'];
+
+        ltg.element('ltgData', ['$parse', '$context', '$digest', 
+            function($parse, $context, $digest) {
+          return {
+            binding: {
+              '=$context': function(context) { return $context(this); },
+              '=$digest': function() { return $digest(this); }
+            },
+            noShadow: true,
+            link: function(element, attrs, ctrls) {
+              if( !D.hasClass(element, 'ltg-context') ) { $context(element, {}); }
+              if( !attrs.notRoot ) { $digest.$root(element); }
+            }
+          };
+        }])
+      })();
+    </script>
+
+    <script type="text/javascript">
+      (function(){
+        ltg.element('ltgView', ['ltgData'], ['$compile', '$context', '$link', '$parse', '$watch', '$context.$data',
+            function($compile, $context, $link, $parse, $watch, $$data) {
+
+          function compileContent(element) {
+            if(element.childNodes.length) {
+              $compile(element);
+              $$data(element);
+              $link(element);
+            }
+          }
+
+          return {
+            noShadow: true,
+            binding: {
+              '=$content': function(content) { compileContent(this); }
+            },
+            link: function(element) { compileContent(element); }
+          }
+        }]);
+      })();
+    </script>
+
+    <script type="text/javascript">
+      (function(){
+        ltg.element('ltgRepet', ['ltgData'], ['$compile', '$context', '$link', '$parse', '$watch', 
+            function($compile, $context, $link, $parse, $watch) {
+          return {
+            noShadow: true,
+            link: function(element) {}
+          }
+        }]);
+      })();
+    </script>
+  </body>
+</html>

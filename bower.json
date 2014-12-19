@@ -1,0 +1,30 @@
+{
+  "name": "ltg",
+  "version": "0.0.4",
+  "homepage": "https://github.com/gKodes/ltg",
+  "authors": [
+    "Kamalakar Gadireddy <kamal590@gmail.com>"
+  ],
+  "description": "HTML5 Custom Elements Simplified",
+  "main": "lth.js",
+  "keywords": [
+    "web-components",
+    "html5",
+    "tag",
+    "route",
+    "ajax",
+    "remote",
+    "path",
+    "form",
+    "submit",
+    "validation"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

@@ -3,71 +3,14 @@
 <head>
   <meta charset="utf-8">
   <title>&lt;t&gt;</title>
-  <script type="text/javascript" src="../js/platform.js"></script>
-
-  <style type="text/css">
-    body {
-      font-family: Segoe UI,Trebuchet MS,Helvetica,Arial;
-      font-size: 14px;
-      margin: 0;
-      padding: 0;
+  <script type="text/javascript">
+    var html5polyfill;
+    if( !('import' in document.createElement('link')) ) {
+      html5polyfill = true;
+      document.write('<script type="text/javascript" src="js/webcomponents.js"><\/script>');
     }
-    
-    ul[is="ltg-nav"] {
-      margin: 0;
-      padding: 10px 0 2px 0;
-      overflow: hidden;
-      background: none repeat scroll 0 0 rgba(0, 0, 0, 0.65);
-    }
-
-    ul[is="ltg-nav"] div.frame {
-      margin: 0 0 15px 0;
-    }
-
-    ul[is="ltg-nav"]::shadow div.frame {
-      margin: 0 0 15px 0;
-    }
-
-    ul[is="ltg-nav"] div.pointer {
-      height: 4px;
-      width: 1px;
-      left: -1px;
-      background: #6191CB;
-      margin-top: -10px;
-      position: relative;
-      transition: 1s ease;
-    }
-
-    ul[is="ltg-nav"]::shadow div.pointer {
-      height: 4px;
-      width: 1px;
-      left: -1px;
-      background: #6191CB;
-      margin-top: -10px;
-      position: relative;
-      transition: 1s ease;
-    }
-
-    ul[is="ltg-nav"] li {
-      padding: 10px 0;
-      display: inline;
-      list-style-type: none;
-      color: white;
-    }
-
-    ul[is="ltg-nav"] li a {
-      padding: 10px;
-      text-decoration: none;
-    }
-
-    ul[is="ltg-nav"] li a:hover {
-      text-decoration: underline;
-    }
-
-    ul[is="ltg-nav"] li a, ul[is="ltg-nav"] li a:active {
-      color: white;
-    }
-  </style>
+  </script>
+  <link rel="stylesheet" type="text/css" href="css/ltg.demo.css">
 </head>
 <body>
 
@@ -106,23 +49,15 @@
   <div try="{{inner}}"></div>
 </div -->
 
-<div id="view-l"></div>
+  <div id="view-main"></div>
+  <div id="view-todo"></div>
 
-<h3>TODO</h3>
-<ul>
-  <li>ltgView - The tag in which data can be bound us the mustach syntax</li>
-  <li>ltgRoute - remove the route when tag is being unlinked</li>
-  <li>Rewrok ltg.element.js - remove un-neassory crap an make it simple</li>
-  <li>Rewrok ltg.js to properly support config,run and bootstrap</li>
-  <li>Expose dependency check api, to see if a tag or service is avilable</li>
-</ul>
-
-<ltg-route path="/view" view="#view-l" template="">
-  <ltg-route path="/one" template="view.one.html"></ltg-route>
-  <ltg-route path="/two" template="view.two.html"></ltg-route>
-  <ltg-route path="/three" template="view.three.html"></ltg-route>
-  <ltg-route path="/license" template="LICENSE"></ltg-route>
-</ltg-route>
+  <ltg-route path="/view" view="#view-main">
+    <ltg-route path="/one" template="views/view.one.html"></ltg-route>
+    <ltg-route path="/two" template="views/view.two.html"></ltg-route>
+    <ltg-route path="/three" template="views/view.three.html"></ltg-route>
+    <ltg-route path="/license" template="LICENSE"></ltg-route>
+  </ltg-route>
 </ltr-ajax>
 
 <hr>
@@ -136,39 +71,35 @@
 <!-- script type="text/javascript" src="../dist/provider.js"></script -->
 <script type="text/javascript">
   ltg.element('ltgNav', ['HTMLUListElement'], function() {
-    this.bindings = {
-      '=': ['selectedIndex', 'selected']
-    };
-    this.template = 
+    return  {
+      bindings: {
+        '=': ['selectedIndex', 'selected']
+      },
+      template:  
       '<div class="frame">' +
         '<content select="li"></content>' +
-      '</div><div class="pointer"></div>';
-    this.controller(function($element, $shadow, $attrs) {});
-    this.link(function($element, $attrs, $shadow) {
-      var pointer = $shadow.$q('.pointer');
-      D.on($shadow.$q('.frame'), 'click', function(evt) {
-        if(evt.target.tagName === 'A') {
-          D.css(pointer, {
-            width: evt.target.offsetWidth + 'px',
-            left: evt.target.offsetLeft + 'px'
-          });
-        }
-      });
-    });
+      '</div><div class="pointer"></div>',
+      controller: function($element, $shadow, $attrs) {},
+      link: function($element, $attrs, $shadow) {
+        var pointer = $shadow.$q('.pointer');
+        D.on($shadow.$q('.frame'), 'click', function(evt) {
+          if(evt.target.tagName === 'A') {
+            D.css(pointer, {
+              width: evt.target.offsetWidth + 'px',
+              left: evt.target.offsetLeft + 'px'
+            });
+          }
+        });
+      }
+    };
   });
 
-  ltg.element('ltgNavItem', ['HTMLLIElement', 'remoteRender'], function() {
-    this.link(function(element) {
-      D.on(element, 'click', function() {
-        var ajax = D.find(element, 'ajax-post, ajax-get');
-        if(ajax) { ajax.setAttribute('send', 'true'); }
-      });
-    });
-  });
-
-  document.addEventListener('DOMContentLoaded', function() {
-    ltg.bootstrap();
-  });
+  document.addEventListener(
+    html5polyfill? 'WebComponentsReady': 'DOMContentLoaded',
+    function() {
+      ltg.bootstrap();
+    }
+  );
 </script>
 
 </body>

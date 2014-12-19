@@ -1,0 +1,45 @@
+<html>
+  <head>
+    <title>ltg - Route View.$context Service</title>
+    <link rel="import" href="ltg.service.compile.html">
+  </head>
+  <body>
+    <script type="text/javascript">
+      /**
+       * @service $context
+       */
+      (function(){
+        'use strict';
+        ltg.config(['$compile', function($compile) {
+          var $data = $compile.$data,
+              wad = 0;
+
+          function $context(element, context) {
+            if(context) {
+              D.addClass(element, 'ltg-context');
+              return $data.set( element, '$context', context );
+            }
+            do {
+              if( D.hasClass(element, 'ltg-context') ) {
+                return $data.get(element, '$context');
+              }
+            } while( (element = ( element.parentNode ||
+              (element.nodeType === 11 && element.host) ) ) );
+          }
+
+          $context.$parent = function(node) {
+            while( (node = ( node.parentNode ||
+              (node.nodeType === 11 && node.host) ) ) )
+            {
+              if( D.hasClass(element, 'ltg-context') ) {
+                return element; //$data.get(element, '$context');
+              }
+            }
+          };
+
+          ltg.constant('$context', $context);
+        }]);
+      })();
+    </script>
+  </body>
+</html>

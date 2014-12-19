@@ -74,7 +74,7 @@ Attribute.prototype = {
     }
   },
   $dispatch: function(eventName, detail) {
-    this.$$element.dispatchEvent(
+    return this.$$element.dispatchEvent(
       new CustomEvent(eventName, detail) );
   },
   // Extract the info from data-* attributes

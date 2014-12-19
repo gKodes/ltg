@@ -1,0 +1,65 @@
+body {
+  font-family: Segoe UI,Trebuchet MS,Helvetica,Arial;
+  font-size: 14px;
+  margin: 0;
+  padding: 0;
+}
+
+ul[is="ltg-nav"] {
+  margin: 0;
+  padding: 10px 0 2px 0;
+  overflow: hidden;
+  background: none repeat scroll 0 0 rgba(0, 0, 0, 0.65);
+}
+
+ul[is="ltg-nav"] div.frame {
+  margin: 0 0 15px 0;
+}
+
+ul[is="ltg-nav"]::shadow div.frame {
+  margin: 0 0 15px 0;
+}
+
+ul[is="ltg-nav"] div.pointer {
+  height: 4px;
+  width: 1px;
+  left: -1px;
+  background: #6191CB;
+  margin-top: -10px;
+  position: relative;
+  transition: 1s ease;
+}
+
+ul[is="ltg-nav"]::shadow div.pointer {
+  height: 4px;
+  width: 1px;
+  left: -1px;
+  background: #6191CB;
+  margin-top: -10px;
+  position: relative;
+  transition: 1s ease;
+}
+
+ul[is="ltg-nav"] li {
+  padding: 10px 0;
+  display: inline;
+  list-style-type: none;
+  color: white;
+}
+
+ul[is="ltg-nav"] li a {
+  padding: 10px;
+  text-decoration: none;
+}
+
+ul[is="ltg-nav"] li a:hover {
+  text-decoration: underline;
+}
+
+ul[is="ltg-nav"] li a, ul[is="ltg-nav"] li a:active {
+  color: white;
+}
+
+.strick, .todo .done {
+  text-decoration: line-through
+}

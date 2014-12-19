@@ -1,0 +1,129 @@
+<html>
+  <head>
+    <title>ltg - Route View.$compile Service</title>
+    <link rel="import" href="../ltg.data.service.html">
+    <script type="text/javascript" src="nodeIteator.js"></script>
+  </head>
+  <body>
+    <script type="text/javascript">
+      /**
+       * @service $compile
+       */
+      (function(){
+        'use strict';
+        var BINDING_VAR_REGEX = /\{\^?\{[a-z]\S*\}\}/ig,
+            TEXT_NODE = 3;
+
+        function splitByExpr(expr) {
+          var index = 0, result = [];
+          expr.replace(BINDING_VAR_REGEX, function(match, location) {
+            if(location - index > 0) { result.push(expr.substring(index, location)); }
+            result.push(match);
+            index = location + match.length;
+            return match;
+          });
+          return result;
+        }
+
+        //Help us find the binding nodes, replacing the xpath selector and interator becasue of IE
+        var BindingNodes = nodeIterator(
+          function hasBinding(element) {
+            var node, attr, adx = 0, attrv = '';
+            while ((attr = element.attributes[adx++])) {
+              //Chech to see if we have any bindings in attributes
+              if (( (attrv = attr.value) && attrv.match(BINDING_VAR_REGEX) ) ||
+                  ( (attrv = attr.name) && attrv.match(BINDING_VAR_REGEX) ) ) {
+                return true;
+              }
+            }
+
+            // Found Binding in Element Text
+            if (node = element.firstChild) {
+              do {
+                if (node.nodeValue && node.nodeValue.match(BINDING_VAR_REGEX)) {
+                  return true;
+                }
+              } while (node = node.nextSibling);
+            }
+            return false;
+          }
+        );
+
+        ltg.config(['$data', '$parseProvider', function(data, $parseProvider) {
+          function watchfn(expr) {
+            var watchfn = $parse(expr);
+            watchfn.watch = expr[1] !== '^';
+            watchfn.expr = expr;
+            return watchfn;
+          }
+
+          function boundNodeValue(node, watchfn, expr) {
+            $data.set(node, '$$bound.nodeValue', watchfn);
+            return node;
+          }
+
+          function $compile(element) {
+            var nodeItr = new BindingNodes(element), node;
+
+            while(node = nodeItr.iterateNext()) {
+              var attributes = node.attributes,
+                  children = node.childNodes,
+                  exp;
+
+              if(attributes.length) {
+                var $$bound = {};
+
+                for(var a = 0; a < attributes.length; a++) {
+                  if( attributes[a].value.match(/^\{\^?\{/) ) {
+                    $$bound[attributes[a].name] = watchfn(attributes[a].value);
+                  }
+                };
+
+                $data.set(node, '$$bound', $$bound);
+              }
+
+              for(var c = 0; c < children.length; c++) {
+                var refNode = children[c], segments, segment;
+                if(refNode.nodeType === TEXT_NODE &&
+                      (segments = splitByExpr(refNode.nodeValue)) && segments.length) {
+
+                  if(segments.length === children.length) {
+                    boundNodeValue(node, watchfn(refNode.nodeValue), refNode.nodeValue);
+                    break;
+                  }
+
+                  do {
+                    if( (segment = segments.shift()) ) {
+                      if( segment.match(/^\{\^?\{/) ) {
+                        node.insertBefore(boundNodeValue(
+                            document.createElement('span'), watchfn(segment), segment),
+                          refNode);
+                      } else {
+                        node.insertBefore(
+                          document.createTextNode(segment), refNode);
+                      }
+                    }
+                  } while(segments.length && ++c);
+
+                  node.removeChild(refNode);
+                }
+              }
+            }
+          };
+
+          var $data = $compile.$data = data('ltg-bound'),
+              $parse = $parseProvider.$get();
+
+          ltg.constant('$compile', $compile);
+
+          ltg.constant('$boundNodes', function(element) {
+            var nodes = [];
+            if(element.getAttribute('ltg-bound')) { nodes.push(element); }
+            nodes.push.apply(nodes, element.querySelectorAll('[ltg-bound]'));
+            return nodes;
+          });
+        }]);
+      })();
+    </script>
+  </body>
+</html>

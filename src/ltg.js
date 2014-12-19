@@ -1,5 +1,5 @@
 /**
- * <t> Disto Main File
+ * <t> ltg - HTML5 Element Simplified Library
  */
 
 (function() {
@@ -10,12 +10,12 @@
   /*#inport 'P.js'*/
   var bootstrap = false,
   $provider = new Provider({
-    '$watch': $watch,
+    //'$watch': $watch,
     '$p': P,
     '$controller': $controller
   }),
-  elementCahce = [],
-  runFns = [];
+  runSeq = [],
+  polyfills = ('import' in document.createElement('link'));
 
   window.ltg = {
     factory: function(name, factoryFn) {
@@ -32,27 +32,33 @@
       };
       $provider.provider(name, serviceProvider);
     },
-    config: function(fn) { if(fn) { $provider.config(fn); } },
-    run: function(fn) { if(fn) { runFns.push(fn); } },
+    config: function(fn) { $provider.config(fn); },
+    run: function(fn) { runSeq.push(fn); },
     element: function() {
       if(arguments.length > 0) {
-        if(bootstrap) { apply(element, this, arguments); }
-        else { elementCahce.push(arguments); }
+        var elementArgs = arguments;
+        runSeq.push(function() {
+          element.apply(null, elementArgs);
+        });
       }
     },
+    constant: function(name, value) {
+      $provider.constant(name, value);
+    },
     bootstrap: function() {
-      var fn;
-      $provider.config();
-      bootstrap = true;
-      while(fn = runFns.shift()) { $provider.invoke(fn); }
-      while(fn = elementCahce.shift()) {
-        apply(element, this, fn);
-      }
+      $provider.bootstrap(function() {
+        var fn;
+        while(fn = runSeq.shift()) { $provider.invoke(fn); }
+        window.ltg.element = element;
+        window.ltg.config = window.ltg.run = noop;
+        document.dispatchEvent( new CustomEvent('ltgLoaded') );
+      });
     },
     controller: controller,
     provider: function(name, provider) {
       $provider.provider(name, provider);
     },
+    //Inc D here
     str: {
       camelCase: camelCase,
       snakeCase: snakeCase
@@ -60,7 +66,4 @@
   }
 
   window.ltg.provider.get = function(name) { return $provider.get(name); }
-})()
-
-/*ltg.service('sample', function() { return 'sampleX'; });
-ltg.factory('test', ['sample', function(sample){ console.info(sample); }])*/
+})();

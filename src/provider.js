@@ -6,8 +6,9 @@
 var Provider = function(serviceCache) {
   var providerSuffix = 'Provider',
       pError = fError('Provider'),
-      configFns = [], depth = [],
-      INIT_STATE = {};
+      configSeq = [], depth = [],
+      INIT_STATE = {},
+      bootstrap;
 
   serviceCache = extend(serviceCache, {'$provider': this});
 
@@ -16,8 +17,8 @@ var Provider = function(serviceCache) {
   }
 
   this.provider = function(name, provider) {
-    if(serviceCache[name + providerSuffix]) {
-      throw pError('p01', 'Provider for the given service \'{0}\' is already registered', name);
+    if(serviceCache[name] || serviceCache[name + providerSuffix]) {
+      throw pError('p01', 'Provider/Constant with the given name \'{0}\' is already registered', name); 
     }
 
     if( canInvoke(provider) ) { provider = this.instantiate(provider); }
@@ -34,35 +35,47 @@ var Provider = function(serviceCache) {
     }
   };
 
-  function getSource(name) {
+  this.get = function(name) {
     if( serviceCache[name] == INIT_STATE ) {
       throw pError('p03', 'Circular dependency found: {0}',
                     name + ' <- ' + depth.join(' <- ') ); /* Cyclic Dependency */
     } else if(serviceCache[name]) { return serviceCache[name]; }
 
-    if( serviceCache[name + providerSuffix] ) {
+    if( bootstrap && serviceCache[name + providerSuffix] ) {
       try {
         depth.unshift(name);
         serviceCache[name] = INIT_STATE;
         return this.invoke(serviceCache[name + providerSuffix].$get);
       } finally { delete serviceCache[name]; depth.shift(); }
     }
-    return false;
+    return false; // raise error not found
   }
 
-  this.has = function(name) { /**/ };
+  this.constant = function(name, value) {
+    if(serviceCache[name]) {
+      throw 'Constant already exists "' + name + '"';
+    }
+    serviceCache[name] = value;
+  };
 
-  this.get = function(name) {
-    return serviceCache[name];
+  this.has = function(name) {
+    return (serviceCache[name] || serviceCache[name + providerSuffix]);
   };
 
   this.config = function(fn) {
-    if( this.get != getSource ) {
-      if( canInvoke(fn) ) { return configFns.push(fn); }
-      while( (fn = configFns.pop()) ) { this.invoke(fn); }
-      this.get = getSource;
-    }
+    if( canInvoke(fn) ) {
+      configSeq.push(fn);
+    };
+    return this;
   };
+
+  this.bootstrap = function(onBoot) {
+    while( (bootstrap = configSeq.shift()) ) {
+      this.invoke(bootstrap);
+    }
+    bootstrap = true;
+    this.invoke(onBoot);
+  }
 };
 
 Provider.prototype = DI.prototype; 

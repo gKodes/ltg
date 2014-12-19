@@ -10,7 +10,7 @@ gulp.task('default', function() {
 });
 
 gulp.task('demo', ['default'], function() {
-  gulp.src(['dist/**', 'vendor/**']).
+  gulp.src(['dist/**', '3rd/**']).
     pipe(gulp.dest('demo/js/'));
 
   gulp.src(['imports/**', 'LICENSE'])
