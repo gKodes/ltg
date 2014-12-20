@@ -85,7 +85,8 @@
                   template: ROUTE_PATH_PARAM.test(attrs.template)?
                     function(routeParams) { return request(attrs.template, routeParams); } :
                       ctrls.ltgRemote.request(attrs.template), // Pre-fetch the template
-                  resolve: {}
+                  resolve: {},
+                  partial: attrs.partial
                 };
                 
                 D.forEach(

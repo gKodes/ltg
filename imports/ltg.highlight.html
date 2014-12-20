@@ -10,9 +10,9 @@
         'use strict';
         var HTML_ENCODING_MAP = {'&': '&amp;', '"': '&quot;', '\'': '&#39', '<': '&lt;','>': '&gt;'};
         function htmlEncoding(html) {
-          return html.replace(/[&"'\<\>]/g, function(chr) {
+          return ( html && html.replace(/[&"'\<\>]/g, function(chr) {
             return HTML_ENCODING_MAP[chr];
-          });
+          }) ) || '';
         }
 
         function trim(str) {
@@ -31,7 +31,7 @@
                     break;
                   }
                 }
-              } else { element.innerHTML = htmlEncoding(element.innerText); }
+              } else if(element.innerHTML) { element.innerTEXT = htmlEncoding(element.innerHTML); }
               hljs.highlightBlock(element);
             }
           }

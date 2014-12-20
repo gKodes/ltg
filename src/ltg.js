@@ -58,6 +58,7 @@
     provider: function(name, provider) {
       $provider.provider(name, provider);
     },
+    polyfil: !('import' in document.createElement('link')),
     //Inc D here
     str: {
       camelCase: camelCase,

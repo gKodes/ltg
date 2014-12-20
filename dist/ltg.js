@@ -622,7 +622,7 @@ function element(name) {
         elementSetup.link.requires = 
           toArray([], name, elementSetup.link.requires);
       }
-      if(elementSetup.unlink) { elementSetup.unlink = [name]; }
+      if(elementSetup.unlink) { elementSetup.unlink.requires = [name]; }
       if( isArray(elementSetup.controller) ) {
         elementSetup.controller = elementSetup.controller.shift();
         elementSetup.controller.extend = true;
@@ -704,7 +704,7 @@ function element(name) {
     };
 
     tag.detachedCallback = function() {
-      if(!this[ltgUniqueStr]) {
+      if(this[ltgUniqueStr]) {
         invokeFnsWithRequires(this, type.unlink, type.noShadow);
         data.clean(this); // Clean up the data
       }
@@ -1184,6 +1184,7 @@ var P = (function() {
     provider: function(name, provider) {
       $provider.provider(name, provider);
     },
+    polyfil: !('import' in document.createElement('link')),
     //Inc D here
     str: {
       camelCase: camelCase,

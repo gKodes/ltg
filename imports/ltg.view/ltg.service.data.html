@@ -10,7 +10,7 @@
       /**
        * @provider $context.$dataProvider
        */
-      (function(){
+      (function() {
         'use strict';
         ltg.provider('$context.$data', function() {
         var dataBinders = {},
@@ -84,7 +84,7 @@
       /**
        * @provider $context.$dataProvider@bind#if
        */
-      (function(){
+      (function() {
         'use strict';
         ltg.config(['$context', '$context.$dataProvider', '$watch', '$parse',
             function($context, $dataProvider, $watch, $parse) {
@@ -109,7 +109,7 @@
       /**
        * @provider $context.$dataProvider@bind#init
        */
-      (function(){
+      (function() {
         'use strict';
         ltg.config(['$context', '$context.$dataProvider', '$parse',
             function($context, $dataProvider, $parse) {
@@ -124,7 +124,7 @@
       /**
        * @provider $context.$dataProvider@bind#context
        */
-      (function(){
+      (function() {
         'use strict';
         ltg.config(['$context', '$context.$dataProvider', '$parse',
             function($context, $dataProvider, $parse) {
@@ -138,6 +138,58 @@
           });
         }]);
       });
+    </script>
+    <!-- -->
+    <script type="text/javascript">
+      /**
+       * @provider $context.$dataProvider@bind#modal
+       */
+      (function() {
+        'use strict';
+        ltg.config(['$context', '$context.$dataProvider', '$parse',
+            function($context, $dataProvider, $parse) {
+          $dataProvider.bind('modal', function(node, modal) {
+            var setter = $parse(modal).setter;
+            node.addEventListener('change', function(evt) {
+              setter(evt.target.checked || evt.target.value);
+            });
+          });
+        }]);
+      })();
+    </script>
+    <!-- -->
+    <script type="text/javascript">
+      /**
+       * @provider $context.$dataProvider@bind#class
+       */
+      (function() {
+        'use strict';
+        ltg.config(['$context', '$context.$dataProvider', '$parse', '$watch',
+            function($context, $dataProvider, $parse, $watch) {
+          $dataProvider.bind('class', function(node, value) {
+            $watch(node, $parse(value), function(classList) {
+              for(className in classList) {
+                //TODO: if set add or remove class
+              }
+            });
+          });
+        }]);
+      })();
+    </script>
+    <!-- -->
+    <script type="text/javascript">
+      /**
+       * @provider $context.$dataProvider@bind#class
+       */
+      (function() {
+        'use strict';
+        ltg.config(['$context', '$context.$dataProvider', '$parse', '$watch',
+            function($context, $dataProvider, $parse, $watch) {
+          $dataProvider.bind(/on-[a-z]\S*/i, function(node, value) {
+            console.info(value);
+          });
+        }]);
+      })();
     </script>
   </body>
 </html>

@@ -40,8 +40,9 @@
          *
          * @Param path string value to be compile into regex
          * @Param i if set the path is treated as case insensitive
+         * @Param p if set the path is treated as partial
          */
-        function buildPathMatch(path, i) {
+        function buildPathMatch(path, i, p) {
           var routePath = new route(path);
 
           //INFO: Convert the path string to regex and extract the segment names
@@ -58,10 +59,24 @@
               }
               return '([^\/]+)';
             }) +
-          '$', (i && 'i') );
+          (p? '' : '$'), (i && 'i') );
 
           return routePath;
         };
+
+        function dispatchEvent(element, eventName, detail, cancelable) {
+          return element.dispatchEvent(new CustomEvent(eventName, 
+                  { bubbles: true, 
+                    cancelable: !!cancelable,
+                    detail: detail
+                  }));
+        }
+
+        function setViewContent(view, viewSrc) {
+          view.content? view.content(viewSrc) : 
+              D.isDomObj(viewSrc)? view.appendChild(viewSrc) :
+                view.innerHTML = viewSrc; // TODO: Security Validataion of the content
+        }
 
         ltg.provider('$route', ['$p', '$controller', function($p, $controller) {
           //TODO: we create two locals here one for route Params and the other for 
@@ -69,66 +84,83 @@
               paths = [],
               rid = 1;
 
-          function changeState(path) {
+          function changeRoute(path) {
+            /*if( $route.$rid !== path.$rid )*/ {
+            
+              $route.path = path.path;
+              $route.$rid = path.$rid;
+
+              // Find the View Element
+              $route.view = document.querySelector(
+                D.isFunction(path.view)? 
+                  path.view($route.routeParams) : path.view );
+              
+              if($route.view) {
+                // TODO: Make this a cancalable event
+                dispatchEvent(document, '$route.load', $route);
+              
+                $route.template = D.isFunction(path.template)? 
+                  path.template($route.routeParams) : 
+                    path.template.then? path.template :
+                      $p.resolve(path.template);
+
+                if(!$route.template) { return; } // Or raise an error
+
+                $route.view.setAttribute('loading', 'true');
+                // view.setAttribute('', ''); // Set a relation between the path and view
+
+                //NOTE: its a promise wait for it to resolve
+                return $route.template.then(function(viewSrc) {
+                  var view = $route.view;
+
+                  setViewContent(view, viewSrc); // TODO: Security Validataion of the content
+
+                  if(path.controller) {
+                    return $controller.invoke(path.controller, 
+                      D.extend({}, route.resolve, {'$routeParams': $route.routeParams}))
+                    .then(function(linkFn) { linkFn(view); });
+                  }
+                })
+                .then(function() {
+                  $route.view.setAttribute('loading', 'false');
+                  dispatchEvent($route.view, '$route.change', $route);
+                })
+                .then(undefined, function() {
+                  dispatchEvent($route.view, '$route.error', $route);
+                  setViewContent(view, '');
+                });
+              }
+            } // Or raise an error
+
+            return dispatchEvent(document, '$route.error', $route);
+            return $p.reject();
+          }
+
+          function changeState(path, matchPath) {
             for(var i = 0; i < paths.length; i++) {
               if( paths[i].view && ($route.routeParams = paths[i].match(path)) ) {
-
-                /*if( $route.$rid !== paths[i].$rid )*/ {
-                
-                  $route.path = paths[i].path;
-                  $route.$rid = paths[i].$rid;
-
-                  // TODO: Load the template
-                  $route.view = document.querySelector(
-                    D.isFunction(paths[i].view)? 
-                      paths[i].view($route.routeParams) : paths[i].view );
-                  
-                  if(!$route.view) { return; } // Or raise an error
-
-                  $route.template = D.isFunction(paths[i].template)? 
-                    paths[i].template($route.routeParams) : 
-                      paths[i].template.then? paths[i].template :
-                        $p.resolve(paths[i].template);
-
-                  if(!$route.template) { return; } // Or raise an error
-
-                  $route.view.setAttribute('loading', 'true');
-                  // view.setAttribute('', ''); // Set a relation between the path and view
-
-                  //NOTE: its a promise wait for it to resolve
-                  $route.template.then(function(viewSrc) {
-                    var view = $route.view;
-
-                    view.content? view.content(viewSrc) : 
-                        D.isDomObj(viewSrc)? view.appendChild(viewSrc) :
-                          view.innerHTML = viewSrc; // TODO: Security Validataion of the content
-
-                    //TODO: Invoke Event for Route Change Success
-                    if(paths[i].controller) {
-                      $controller.invoke(paths[i].controller, 
-                        D.extend({}, route.resolve, {'$routeParams': $route.routeParams}))
-                      .then(function(linkFn) {
-                        linkFn(view);
-                        view.setAttribute('loading', 'false');
-                      });
-                    } else {
-                      view.setAttribute('loading', 'false');
-                    }
-
-                  });
-                  
-                  return;
-                }
+                if(!(matchPath = paths[i]).partial) { break; }
               }
+            }
+            /* NOTE: Prevnet for infite loop of refresh, if not checked
+             * it will re-load the view and recreate the tags making it a
+             * infinite loop.
+             */
+            if( !$route || (matchPath.$rid !== $route.$rid) ) {
+              changeRoute(matchPath).then(function() {
+                if(matchPath.partial) {
+                  changeState(path, matchPath);
+                }
+              });
             }
           }
 
-          window.addEventListener('popstate', function(evt) {
-            changeState(location.hash.substr(1));
-          });
+          function getWindowPath() {
+            return location.hash.substr(1) || '/';
+          }
 
-          document.addEventListener('ltgLoaded', function() {
-            changeState(location.hash.substr(1));
+          window.addEventListener('popstate', function(evt) {
+            changeState(getWindowPath());
           });
 
 /*          D.on(window, 'hashchange', function(evt) {
@@ -138,9 +170,11 @@
 
           this.history = {};
 
+          var pathAddTimerId;
+
           this.when = function(path, route) {
             if(route.view && route.template) {
-              var routePath = buildPathMatch(path, route.caseInsensitiveMatch);
+              var routePath = buildPathMatch(path, route.caseInsensitiveMatch, route.partial);
               // view and template can be functions or promises
               // a template can be a dom element also including a template tag
               // view, controller, template, resolve, redirectTo, reloadOnSearch
@@ -149,9 +183,15 @@
               routePath.template = route.template;
               routePath.resolve = route.resolve;
               routePath.controller = route.controller;
+              routePath.partial = route.partial;
               routePath.$rid = ++rid;
               //routePath.provider = route.provider;
               paths.push(routePath);
+
+              //NOTE: To check if the newely added path matches the location, if so update the view
+              //Make this time out configurable
+              clearTimeout(pathAddTimerId);
+              pathAddTimerId = setTimeout(function() { changeState(getWindowPath()); }, 100);
 
               return function() {
                 var idx = -1;
