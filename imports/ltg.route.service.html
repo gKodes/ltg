@@ -73,7 +73,7 @@
         }
 
         function setViewContent(view, viewSrc) {
-          view.content? view.content(viewSrc) : 
+          view.$content? view.$content(viewSrc) : 
               D.isDomObj(viewSrc)? view.appendChild(viewSrc) :
                 view.innerHTML = viewSrc; // TODO: Security Validataion of the content
         }
@@ -116,9 +116,9 @@
                   setViewContent(view, viewSrc); // TODO: Security Validataion of the content
 
                   if(path.controller) {
-                    return $controller.invoke(path.controller, 
-                      D.extend({}, route.resolve, {'$routeParams': $route.routeParams}))
-                    .then(function(linkFn) { linkFn(view); });
+                    $controller.invoke(path.controller, 
+                      path.resolve, {'$routeParams': $route.routeParams})
+                    .then(function(linkFn) { linkFn(view, {'$routeParams': $route.routeParams}); });
                   }
                 })
                 .then(function() {
@@ -127,12 +127,12 @@
                 })
                 .then(undefined, function() {
                   dispatchEvent($route.view, '$route.error', $route);
-                  setViewContent(view, '');
+                  setViewContent($route.view, '');
                 });
               }
             } // Or raise an error
 
-            return dispatchEvent(document, '$route.error', $route);
+            dispatchEvent(document, '$route.error', $route);
             return $p.reject();
           }
 
@@ -146,7 +146,7 @@
              * it will re-load the view and recreate the tags making it a
              * infinite loop.
              */
-            if( !$route || (matchPath.$rid !== $route.$rid) ) {
+            if( !$route || (matchPath && matchPath.$rid !== $route.$rid) ) {
               changeRoute(matchPath).then(function() {
                 if(matchPath.partial) {
                   changeState(path, matchPath);
@@ -159,14 +159,13 @@
             return location.hash.substr(1) || '/';
           }
 
-          window.addEventListener('popstate', function(evt) {
+          /*window.addEventListener('popstate', function(evt) {
+            changeState(getWindowPath());
+          });*/
+
+          window.addEventListener('hashchange', function(evt) {
             changeState(getWindowPath());
           });
-
-/*          D.on(window, 'hashchange', function(evt) {
-            changeState(location.hash.substr(1));
-            console.info('location: ' + location.hash + ', event: ', evt);
-          });*/
 
           this.history = {};
 

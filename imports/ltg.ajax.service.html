@@ -24,12 +24,16 @@
                   };
                 }
               };
+          methods.GET.urlOnly = true;
+          methods.JSONP = methods.GET;
 
           function onEvent(fn) {
             return function onEvent(evt) {
               fn(evt.target.response, evt.target.status, evt.target);
             };
           };
+
+          function jsonpRequest(url) {};
 
           function ltrAjax() {};
           
@@ -38,6 +42,25 @@
               settings = D.extend({}, globalSettings, this.settings, settings);
 
               return $p(function(resolve, reject, notify) {
+                
+                if( settings.data && methods[settings.type] ) {
+                  D.forEach(settings.data, function(value, key) {
+                    if( D.isElement(value) ) {
+                      this.append(( (parseInt(key) === NaN)? key : value.name ),
+                        value, value.value);
+                    } else { this.append(key, value); }
+                  }, (method = new methods[settings.type]()));
+
+                  if(methods[settings.type].urlOnly && method.data) {
+                    url = url + (!!~url.indexOf('?')? '?' : '&') + method.data;
+                    delete method.data;
+                  }
+                }
+
+                if(settings.type === 'JSONP') {
+                  return jsonpRequest(settings, resolve, reject);
+                }
+
                 var request = new XMLHttpRequest(),
                     method;
 
@@ -50,26 +73,20 @@
                 request.addEventListener('progress', function onLtgAjaxEProgress(evt) {
                   notify(evt.loaded, evt.total, evt.target);
                 }, false);
+
                 request.addEventListener('load', function onLtgAjaxELoad(evt) {
+                  var response = request.response || request.responseText;
+                  if(settings.response === 'json' ||
+                       !!~(request.getResponseHeader('Content-Type') ||  '')
+                            .indexOf('application/json') ) {
+                    response = JSON.parse(response);
+                  }
                   (evt.target.status == 200? resolve : reject)
-                      (evt.target.response, evt.target.status, evt.target);
+                      (response, request.status, request.target);
                 }, false);
+                
                 request.addEventListener('abort', onLtgAjaxError, false);
                 request.addEventListener('error', onLtgAjaxError, false);
-
-                if( settings.data && methods[settings.type] ) {
-                  D.forEach(settings.data, function(value, key) {
-                    if( D.isElement(value) ) {
-                      this.append(( (parseInt(key) === NaN)? key : value.name ),
-                        value, value.value);
-                    } else { this.append(key, value); }
-                  }, (method = new methods[settings.type]()));
-
-                  if(settings.type === 'GET' && method.data) {
-                    url = url + '?' + method.data;
-                    delete method.data;
-                  }
-                }
 
                 //INFO: Open the rerquest so we can added headers
                 request.open(settings.type, url, true,

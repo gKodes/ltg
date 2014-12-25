@@ -32,10 +32,8 @@ var P = (function() {
         return result.then.apply(result, arguments);
       }
       
-      if(isUndefined(status)) { callbacks.push(arguments); }
-      else if(arguments[status]) {
-        arguments[status].apply(null, result);
-      }
+      callbacks.push(arguments);
+      if(isDefined(status)) { invokeState(status).apply(null, result); }
 
       return this;
     };
@@ -80,7 +78,7 @@ var P = (function() {
 
       forEach(promises, function(value, pos) {
         if( value && isFunction(value.then) ) {
-          value.then(function() {
+          value.then(function(result) {
             results[pos] = result;
             if(!(--pending)) { resolve(results); }
           }, reject, notify);

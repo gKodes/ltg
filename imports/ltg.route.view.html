@@ -14,7 +14,7 @@
             function($parse, $context, $digest) {
           return {
             binding: {
-              '=$context': function(context) { return $context(this); },
+              '=$context': function(context) { return $context(this, context); },
               '=$digest': function() { return $digest(this); }
             },
             noShadow: true,
@@ -35,17 +35,17 @@
           function compileContent(element) {
             if(element.childNodes.length) {
               $compile(element);
-              $$data(element);
               $link(element);
+              $$data(element);
             }
           }
 
           return {
             noShadow: true,
             binding: {
-              '=$content': function(content) { compileContent(this); }
+              '=$content': function(content) { this.innerHTML = content; compileContent(this); }
             },
-            link: function(element) { compileContent(element); }
+            link: function(element) { compileContent(element); element.$digest(); }
           }
         }]);
       })();

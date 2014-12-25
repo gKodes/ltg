@@ -15,27 +15,20 @@ function $controller(name, fn) {
 
 // If the name is an function directly invoke it
 
-$controller.invoke = function(name, resolvers) {
+$controller.invoke = function(name, resolvers, locals) {
   var resolved = {};
   forEach(resolvers, function(fn, name) {
-    this[name] = D.isFunction(fn)? $provider.invoke(fn, locals): fn;
-/*    if(this[name].then) {
-      this[name].then(function(result) {
-        resolved[name] = result;
-      });
-    }*/
+    this[name] = Provider.canInvoke(fn)? $provider.invoke(fn, locals): fn;
   }, resolved);
 
   return P.all(resolved).then(function(depends) {
     return P(function(resolve) {
-      // TODO: resolver should provide a link function which
-      // would help bind it to a node
       resolve(function linkCtrl(element, locals, bind) { 
+        locals = extend({}, locals, depends);
         locals['$element'] = element;
         //TODO: get the $attrs into the local stack
         // locals['$attrs'] = element;
-        var controller =
-            $provider.invoke(controllers[name], extend({}, locals, depends));
+        var controller = $provider.invoke(controllers[name], locals);
         if(bind) { data(element, name + 'Ctrl', controller); }
       });
     });

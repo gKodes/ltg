@@ -47,7 +47,7 @@
 
           function binder(name) {
             for(var binding in dataBinders) {
-              if( name.match(binding) ) {
+              if( (binding.test && binding.test(name)) || name === binding ) {
                 return dataBinders[binding];
               }
             }
@@ -56,21 +56,19 @@
           //Think about how to prevent binding more then once
           ltg.config(['$context', '$watch', function($context, $watch) {
             $data = function(element) {
-              var dataNodes = new DataNodes(element), nodes = [];
+              var dataNodes = new DataNodes(element), node;
               
-              // NOTE: Need to do this as the interator would break if we change the dom while looping
-              while( nodes.push(dataNodes.iterateNext()) === 1 );
-
-              D.forEach(nodes, function(node) {
-                D.forEach(node.attributes, function(attr) {
+              while( node = dataNodes.iterateNext() ) {
+                for(var a = 0, attrs = node.attributes, attr; 
+                      a < attrs.length && (attr = attrs[a]); a++) {
                   var nameMatch, binderfn;
                   if( nameMatch = attr.name.match(DATA_NODE_REGEX) ) {
                     if( (binderfn = binder(nameMatch[1])) && attr.value ) {
                       binderfn(node, attr.value);
                     }
                   }
-                });
-              });
+                }
+              }
 
             };
           }]);
@@ -86,20 +84,21 @@
        */
       (function() {
         'use strict';
-        ltg.config(['$context', '$context.$dataProvider', '$watch', '$parse',
-            function($context, $dataProvider, $watch, $parse) {
+        ltg.config(['$context', '$context.$dataProvider', '$watch', '$parse', '$digest',
+            function($context, $dataProvider, $watch, $parse, $digest) {
           $dataProvider.bind('if', function(node, condition) {
             //TODO: remove the node, add a watch
             var parentNode = node.parentNode,
                 watchfn = $parse(condition);
             
             $watch(parentNode, watchfn, function(value) {
-              if(value) { parentNode.appendChild(node); }
+              if(value) {
+                if(!node.parentNode) {
+                  $digest.$on(parentNode.appendChild(node));
+                }
+              }
               else if(node.parentNode) { parentNode.removeChild(node); }
             });
-
-            // For the first time check
-            if(!watchfn($context(node))) { parentNode.removeChild(node); }
           });
         }]);
       })();
@@ -146,13 +145,65 @@
        */
       (function() {
         'use strict';
-        ltg.config(['$context', '$context.$dataProvider', '$parse',
-            function($context, $dataProvider, $parse) {
+        ltg.config(['$context', '$context.$dataProvider', '$watch', '$parse', '$digest',
+            function($context, $dataProvider, $watch, $parse, $digest) {
           $dataProvider.bind('modal', function(node, modal) {
-            var setter = $parse(modal).setter;
-            node.addEventListener('change', function(evt) {
-              setter(evt.target.checked || evt.target.value);
+            var getter = $parse(modal),
+                setter = getter.setter;
+            if(setter) {
+              node.addEventListener('input', function(evt) {
+                setter($context(evt.target), 
+                  evt.target.checked || evt.target.value);
+                //console.info("$digest");
+                $digest(evt.target, evt.target.value);
+              });
+            } // Throw the varible cannot be set
+            $watch(node, getter, function(value) {
+              //INFO: Does not invoke input event again, so it wont digest again
+              node.value = value || '';
             });
+          });
+        }]);
+      })();
+    </script>
+    <!-- -->
+    <script type="text/javascript">
+      /**
+       * @provider $context.$dataProvider@bind#class
+       */
+      (function() {
+        'use strict';
+        ltg.config(['$context', '$context.$dataProvider', '$parse', '$watch', '$digest', '$compile',
+            function($context, $dataProvider, $parse, $watch, $digest, $compile) {
+          var repeatIdx = 1;
+
+          $dataProvider.bind('repeat', function(node, value) {
+            var rootNode = node.parentNode,
+                rid = ('ltg-repeat-' + (repeatIdx++)),
+                keyName = node.getAttribute('data-repeat-key') || 'key',
+                valueName = node.getAttribute('data-repeat-value') || 'value',
+                watchfn = (value === '.')? function() { return arguments[0]; } : $parse(value);
+            D.removeAttr(node, 'data-repeat', 'data-repeat-key', 'data-repeat-value');
+            D.addClass(node, rid);
+            rootNode.removeChild(node);
+            
+            $watch.$collection(rootNode, watchfn, function(data) {
+              D.forEach(rootNode.querySelectorAll('.' + rid), 
+                function(rNode) { rootNode.removeChild(rNode); });
+              
+              for(var key in data) {
+                var repeatContext = {},
+                    nNode = ltg.cloneNode(node, true);
+                
+                repeatContext[keyName] = key
+                repeatContext[valueName] = data[key];
+                
+                $context(
+                  $compile.$data.extend(
+                    rootNode.appendChild(nNode) ), repeatContext);
+                $digest.$on(nNode);
+              }
+            })
           });
         }]);
       })();
@@ -183,8 +234,8 @@
        */
       (function() {
         'use strict';
-        ltg.config(['$context', '$context.$dataProvider', '$parse', '$watch',
-            function($context, $dataProvider, $parse, $watch) {
+        ltg.config(['$context', '$context.$dataProvider', '$parse', '$watch', '$provider',
+            function($context, $dataProvider, $parse, $watch, $provider) {
           $dataProvider.bind(/on-[a-z]\S*/i, function(node, value) {
             console.info(value);
           });

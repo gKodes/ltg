@@ -9,7 +9,7 @@ var bindingTypes = {
     return {
       configurable: false,
       get: function() { return this.getAttribute(attrName); },
-      set: function(value) { this.setAttribute(attrName, (storage = value)); }
+      set: function(value) { this.setAttribute(attrName, value); }
     }
   },
   '=': function prop(name) {

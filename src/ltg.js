@@ -9,13 +9,11 @@
   /*#inport 'ltg.controllers.js'*/
   /*#inport 'P.js'*/
   var bootstrap = false,
-  $provider = new Provider({
-    //'$watch': $watch,
-    '$p': P,
-    '$controller': $controller
-  }),
+  $provider = new Provider(),
   runSeq = [],
   polyfills = ('import' in document.createElement('link'));
+  $provider.constant('$p', P);
+  $provider.constant('$controller', $controller);
 
   window.ltg = {
     factory: function(name, factoryFn) {
@@ -64,7 +62,13 @@
       camelCase: camelCase,
       snakeCase: snakeCase
     }
-  }
+  };
+
+  window.ltg.cloneNode = function(node, deep) {
+    return (window.ShadowDOMPolyfill && 
+      ShadowDOMPolyfill.cloneNode(node, deep)) ||
+        node.cloneNode(deep);
+  };
 
   window.ltg.provider.get = function(name) { return $provider.get(name); }
 })();

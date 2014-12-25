@@ -28,6 +28,12 @@ gulp.task('P', function() {
     .pipe(gulp.dest('dist/'));
 });
 
+gulp.task('D', function() {
+  gulp.src(['src/D.js']) // , 'src/ltg.js'
+    .pipe(jsInclude(['src/includes/']))
+    .pipe(gulp.dest('dist/'));
+});
+
 gulp.task('provider', function() {
   gulp.src('src/provider.js') // , 'src/ltg.js'
     .pipe(jsInclude(['src/includes/']))

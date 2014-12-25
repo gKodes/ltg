@@ -3,18 +3,17 @@
 /*#inport <error.js>*/
 /*#inport 'di.js'*/
 
-var Provider = function(serviceCache) {
+function canInvoke(fn) {
+  return ( isArray(fn) && isFunction( last(fn) ) ) || isFunction(fn);
+}
+
+var Provider = function() {
   var providerSuffix = 'Provider',
       pError = fError('Provider'),
       configSeq = [], depth = [],
       INIT_STATE = {},
+      serviceCache = {'$provider': this},
       bootstrap;
-
-  serviceCache = extend(serviceCache, {'$provider': this});
-
-  function canInvoke(fn) {
-    return ( isArray(fn) && isFunction( last(fn) ) ) || isFunction(fn);
-  }
 
   this.provider = function(name, provider) {
     if(serviceCache[name] || serviceCache[name + providerSuffix]) {
@@ -76,6 +75,9 @@ var Provider = function(serviceCache) {
     bootstrap = true;
     this.invoke(onBoot);
   }
+
+  this.canInvoke = canInvoke;
 };
 
 Provider.prototype = DI.prototype; 
+Provider.canInvoke = canInvoke;

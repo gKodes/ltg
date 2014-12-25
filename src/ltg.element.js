@@ -111,6 +111,16 @@ function invokeFnsWithRequires(element, fns, noShadow) {
   });
 }
 
+function elementAttrWatch(attrName, old, value) {
+  if(this[ltgUniqueStr]) {
+    var $attrs = data(this, '$attrs');
+
+    value = (value === null)? false : (value? value : true);
+    $attrs[camelCase(attrName)]  = value;
+    $attrs.$digest(camelCase(attrName), value, old);
+  }
+}
+
 /**
  * Element 
  * bindings - proporties which are exposed on the element instance
@@ -181,87 +191,83 @@ function element(name) {
     }
 
     extend(type, elementSetup);
+  }
 
-    var tag = Object.create((baseType || window['HTMLElement']).prototype,
-      propertyMap(type.binding));
+  var tag = Object.create((baseType || window['HTMLElement']).prototype,
+    propertyMap(type.binding));
 
-    /**
-     * Invoked when the tage is created, we call the compile methods &
-     * create instance of all the controllers for th element.
-     */
-    tag.createdCallback = function() {
-      var nodeData = {
-        '$attrs': new Attribute(this)
-      };
-      
-      if( !type.noShadow && this.createShadowRoot() ) {
-        //TODO: Support DOM elements
-        this.shadowRoot.innerHTML = (type.template || '');
-        nodeData['$shadow'] = new Shadow(this);
-      }
-
-      var locals = { $element: this };
-
-      /* NOTE:
-      * Compile the element where we make changes to the element,
-      * IMP: the element should not be replaced by the compler function
-      */
-      forEach(type.compile, function(compiler) {
-        compiler(this, nodeData.$attrs, nodeData.$shadow, function(transclude) {
-          //var recent = locals['$transclude'];           return recent;
-          locals['$transclude'] = transclude;
-        });
-      }, this);
-
-      extend(locals, nodeData);
-
-      forEach(type.controller, function(ctrlFn, name) { 
-        if(ctrlFn.extend && baseCtrlName) {
-          $provider.invoke(ctrlFn, locals, 
-            (nodeData['$' + name + 'Ctrl'] = 
-              nodeData['$' + baseCtrlName + 'Ctrl']) );
-        } else {
-          nodeData['$' + name + 'Ctrl'] = 
-            $provider.instantiate(ctrlFn, locals);
-        }
-      }, this);
-
-      data(this, nodeData);
+  /**
+   * Invoked when the tage is created, we call the compile methods &
+   * create instance of all the controllers for th element.
+   */
+  tag.createdCallback = function() {
+    var nodeData = {
+      '$attrs': new Attribute(this)
     };
+    
+    if( !type.noShadow && this.createShadowRoot() ) {
+      //TODO: Support DOM elements
+      this.shadowRoot.innerHTML = (type.template || '');
+      nodeData['$shadow'] = new Shadow(this);
+    }
 
-    /**
-     * Invoked when the node is attached to its parent
-     */
+    var locals = { $element: this };
+
+    /* NOTE:
+    * Compile the element where we make changes to the element,
+    * IMP: the element should not be replaced by the compler function
+    */
+    forEach(type.compile, function(compiler) {
+      compiler(this, nodeData.$attrs, nodeData.$shadow, function(transclude) {
+        //var recent = locals['$transclude'];           return recent;
+        locals['$transclude'] = transclude;
+      });
+    }, this);
+
+    extend(locals, nodeData);
+
+    forEach(type.controller, function(ctrlFn, name) { 
+      if(ctrlFn.extend && baseCtrlName) {
+        $provider.invoke(ctrlFn, locals, 
+          (nodeData['$' + name + 'Ctrl'] = 
+            nodeData['$' + baseCtrlName + 'Ctrl']) );
+      } else {
+        nodeData['$' + name + 'Ctrl'] = 
+          $provider.instantiate(ctrlFn, locals);
+      }
+    }, this);
+
+    data.set(this, nodeData);
+  };
+
+  /**
+   * Invoked when the node is attached to its parent
+   */
+  if(type.link.length) {
     tag.attachedCallback = function() {
       if(this[ltgUniqueStr]) { // Check to see if we had success in createdCallback
         invokeFnsWithRequires(this, type.link, type.noShadow);
       }
     };
+  }
 
-    /**
-     * Invoked when a attribute value changes
-     */
-    tag.attributeChangedCallback = function(attrName, old, value) {
-      if(this[ltgUniqueStr]) {
-        var $attrs = data(this, '$attrs');
+  /**
+   * Invoked when a attribute value changes
+   */
+  tag.attributeChangedCallback = elementAttrWatch;
 
-        value = (value === null)? false : (value? value : true);
-        $attrs[camelCase(attrName)]  = value;
-        $attrs.$digest(camelCase(attrName), value, old);
-      }
-    };
-
+  if(type.unlink.length) {
     tag.detachedCallback = function() {
       if(this[ltgUniqueStr]) {
         invokeFnsWithRequires(this, type.unlink, type.noShadow);
         data.clean(this); // Clean up the data
       }
     };
-
-    var regOptions = {'prototype': tag};
-    if( baseType ) { regOptions['extends'] = baseName; }
-
-    /* register the tag */
-    return document.registerElement(snakeCase(name), regOptions);
   }
+
+  var regOptions = {'prototype': tag};
+  if( baseType ) { regOptions['extends'] = baseName; }
+
+  /* register the tag */
+  return document.registerElement(snakeCase(name), regOptions);
 }

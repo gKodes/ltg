@@ -22,16 +22,14 @@
       ltg.element('ltgRequest', function() {
         return {
           noShadow: true,
-          bindings: {
-            '*': 'send',
-            '=': 'data'
+          binding: {
+            '*': ['send'],
+            '=': ['data']
           },
           controller: function($element, $attrs) {
             this.append = function() {};
           },
           link: function(element, attrs, ltgRequest) {
-            var auto = attrs.$get('auto');
-            attrs.$set('send', (!auto || (auto && auto !== 'false')));
             D.bind(element, 'append', ltgRequest.append);
           }
         };
@@ -64,7 +62,7 @@
             evt.detail.then(function(data) {
               var ref = document.querySelector(attrs.ref);
               if(ref) {
-                ref[attrs.type === 'html'? 'innerHTML': 'innerText'] = data;
+                ref.innerHTML = data;
               }
             });
           });

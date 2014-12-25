@@ -1,7 +1,6 @@
 <html>
   <head>
     <title>ltg - Path Route Library</title>
-    <link rel="import" href="ltg.remote.html">
     <link rel="import" href="ltg.route.service.html">
     <link rel="import" href="ltg.route.view.html">
   </head>
@@ -51,6 +50,10 @@
 
         var ROUTE_PATH_PARAM = /\{[a-z#\$][a-z0-9_\-#\$]+\}/ig;
 
+        document.addEventListener('$route.load', function(evt) {
+          D(evt.detail.view.querySelectorAll('ltg-route')).attr('remove', 'true');
+        });
+
         ltg.element('ltgRoute', ['$routeProvider', '$route', function($routeProvider, $route) {
           return {
             noShadow: true,
@@ -90,22 +93,27 @@
                 };
                 
                 D.forEach(
-                  element.querySelectorAll(':scope > resolve'),
+                  element.querySelectorAll('resolve'),
                   function(node) {
-                    if(node.name && node.getAttribute('url')) {
-                      routePath.resolve[node.name] = ['$routeParams', function($routeParams) {
-                        return request(node.getAttribute('url'), $routeParams);
-                      }];
+                    if(node.parentNode === element) {
+                      if(node.getAttribute('name') && node.getAttribute('url')) {
+                        routePath.resolve[node.getAttribute('name')] = ['$routeParams', function($routeParams) {
+                          return request(node.getAttribute('url'), $routeParams);
+                        }];
+                      }
                     }
                   }
                 );
 
                 ctrls.ltgRoute.remove = $routeProvider.when(ctrls.ltgRoute.path, routePath);
+                attrs.$observer('remove', function() {
+                  ctrls.ltgRoute.remove();
+                })
               }
-            }],
+            }]/*,
             unlink: function(element, attrs, ltgRoute) {
               ltgRoute.remove();
-            }
+            }*/
           }
         }]);
       })();

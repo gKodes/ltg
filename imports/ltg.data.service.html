@@ -6,6 +6,8 @@
     <script type="text/javascript">
       (function() {
         ltg.config(function() {
+          function baseObject() {};
+
           function nextId(id) { return ++id; }
 
           function data(attrId, uid) {
@@ -37,7 +39,14 @@
               }
             };
 
-            this.clone = function(element) {}
+            this.clone = function() {}
+
+            this.extend = function(element) {
+              var nodeData = this.get(element), id;
+              element.setAttribute( attrId, (id = (uid = nextId(uid || 0) ) ) );
+              dataCache[id] = Object.create(baseObject, nodeData);
+              return element;
+            }
           }
 
           ltg.constant('$data', function(attrId, uid) { return new data(attrId || 'data-ltg', uid) })

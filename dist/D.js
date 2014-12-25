@@ -142,102 +142,6 @@ function noop() {}
   //array.js
 
 
-function first(src) {
-  if(src && src.length) {
-    return src[0]; 
-  }
-}
-
-function last(src) {
-  if(src && src.length) {
-    return src[src.length - 1]; 
-  }
-}
-
-var push = Array.prototype.push;
-var pop = Array.prototype.pop;
-var unshift = Array.prototype.unshift;
-var shift = Array.prototype.shift;
-var splice = Array.prototype.splice;
-var slice = Array.prototype.slice;
-
-/*function flatInvoke(thisArg, array, fn) {
-  if(array && array.length) { fn.apply(thisArg, array); }
-  else if(!isArray(array)) { fn.call(thisArg, array); }
-  return thisArg;
-}*/
-
-/**
-* Convert a object to array.
-*/
-function toArray(dst) {
-  forEach(arguments, function(src) {
-    if(src !== dst && src) {
-      if(!isFunction(src) && !isString(src) && isNumber(src.length)) {
-        if(src.length) { apply(push, this, src); }
-      } else { Array.prototype.push.call(this, src); }
-    }
-  }, dst);
-  return dst;
-}
-
-
-function filter(arr, cbFn, thisArg, result) {
-  if( isFunction(arr.filter) ) {
-    return arr.filter(cbFn, thisArg);
-  }
-  
-  var isArr = isArray(arr);
-  result = result || (isArr? [] : {});
-  forEach(arr, function(value, index) {
-    if( cbFn.call(thisArg, value, index, arr) ) {
-      if( isArr ) { result.push(value); }
-      else { result[index] = value; }
-    }
-  }, thisArg);
-  return result;
-}
-
-function find(arr, cbFn, thisArg) {
-  return arr[findIndex(arr, cbFn, thisArg)];
-}
-
-function findIndex(arr, cbFn, thisArg) {
-  var s, keys;
-  if( isNumber(arr.length) ) {
-    for (s = 0; s < arr.length; s++) { 
-      if( cbFn.call(thisArg, arr[s], s, arr) ) { return s; }
-    }
-  } else {
-    keys = Object.keys(arr);
-    for (s = 0; s < keys.length; s++) {
-      if( cbFn.call(thisArg, arr[keys[s]], keys[s], arr) ) { return keys[s]; }
-    }
-  }
-  return -1;
-}
-
-  //extend.js
-//forEach.js
-
-function forEach(arr, iterator, thisArg) {
-  if(arr) {
-    var s;
-    if(arr.forEach) {
-      arr.forEach(iterator, thisArg);
-    } else if( isNumber(arr.length) && !isFunction(arr) ) {
-      for (s = 0; s < arr.length; s++) { 
-        iterator.call(thisArg, arr[s], s, arr);
-      }
-    } else {
-      var keys = Object.keys(arr);
-      for (s = 0; s < keys.length; s++) {
-        iterator.call(thisArg, arr[keys[s]], keys[s], arr);
-      }
-    }
-  }
-}
-
 function property(key, def) {
   return function getProperty(obj) {
     var val;
@@ -284,87 +188,223 @@ function hasOwn(obj, propName) {
 function isPO(src) {
   return !isArray(src) && isObject(src) && src.constructor && src.constructor === Object;
 }
-function extend(dst) {
-  if(!dst) {
-  	if(arguments.length == 2) { return arguments[1]; }
-  	else { dst = {}; }
+function first(src) {
+  if(src && src.length) {
+    return src[0]; 
   }
-  forEach(arguments, function(obj){
-    if (obj && obj !== dst) {
-      forEach(obj, function(value, key){
-        if( isArray(value) ) {
-          Array.prototype.push.apply( 
-            ( dst[key] = isArray(dst[key])? dst[key] : [] ), value );
-        } else if(isArray(dst[key])) {
-          dst[key].push(value);
-        } else if( isPO(value) ) {
-          dst[key] = extend((isObject(dst[key]) && dst[key]), value);
-        }
-        else { dst[key] = value; }
-      });
+}
+
+function last(src) {
+  if(src && src.length) {
+    return src[src.length - 1]; 
+  }
+}
+
+var push = Array.prototype.push;
+var pop = Array.prototype.pop;
+var unshift = Array.prototype.unshift;
+var shift = Array.prototype.shift;
+var splice = Array.prototype.splice;
+var slice = Array.prototype.slice;
+
+/*function flatInvoke(thisArg, array, fn) {
+  if(array && array.length) { fn.apply(thisArg, array); }
+  else if(!isArray(array)) { fn.call(thisArg, array); }
+  return thisArg;
+}*/
+
+/**
+* Convert a object to array.
+*/
+function toArray(dst) {
+  forEach(arguments, function(src) {
+    if(src !== dst && src) {
+      if(!isFunction(src) && !isString(src) && isNumber(src.length)) {
+        if(src.length) { apply(push, this, src); }
+      } else { Array.prototype.push.call(this, src); }
     }
-  });
+  }, dst);
   return dst;
 }
-  function D() {}
 
-  function arr(src) {
-    return Array.prototype.splice.call(src, 0);
-  };
+//forEach.js
 
-  function _(args, cbfn) {
-    var source = ( (isArray(args[0]) || isDomObj(args[0])) &&
-        args.shift() ) || this, result;
-    if( isArray(source) ) {
-      result = [];
-      for(var index = 0; index < source.length; index++) {
-        apply(push, result, cbfn.apply(source[index], args));
-      };
-    } else { result = cbfn.apply(source, args); }
-    return result;
-  };
+function forEach(arr, iterator, thisArg) {
+  if(arr) {
+    var s;
+    if(arr.forEach) {
+      arr.forEach(iterator, thisArg);
+    } else if( isNumber(arr.length) && !isFunction(arr) ) {
+      for (s = 0; s < arr.length; s++) { 
+        iterator.call(thisArg, arr[s], s, arr);
+      }
+    } else {
+      var keys = Object.keys(arr);
+      for (s = 0; s < keys.length; s++) {
+        iterator.call(thisArg, arr[keys[s]], keys[s], arr);
+      }
+    }
+  }
+}
+function filter(arr, cbFn, thisArg, result) {
+  if( isFunction(arr.filter) ) {
+    return arr.filter(cbFn, thisArg);
+  }
+  
+  var isArr = isArray(arr);
+  result = result || (isArr? [] : {});
+  forEach(arr, function(value, index) {
+    if( cbFn.call(thisArg, value, index, arr) ) {
+      if( isArr ) { result.push(value); }
+      else { result[index] = value; }
+    }
+  }, thisArg);
+  return result;
+}
 
-  D.prototype = {
-    css: function() {
-      _(arr(arguments), 
-        function(name, value) {
-          if(isObject(name)) { extend(this.style, name); }
-          else { this.style[name] = value; }
-        }
-      );
-    },
-    on: function() {
-      return _(arr(arguments), 
-        function() {
-          this.addEventListener.apply(this, arguments); } );
-    },
-    off: function() {
-      return _(arr(arguments),
-        function() { this.removeEventListener.apply(this, arguments); });
-    },
-    bind: function(dst, name, value) {
-      return Object.defineProperty(dst, name, {
-        __proto__: null,
-        value: value
-      });
-    },
-    find: function() {
-      return _(arr(arguments), function(selector) {
-        return this.querySelector(selector);
-      });
-    },
-    findAll: function() {
-      return _(arr(arguments), function(selector) {
-        return this.querySelectorAll(selector);
-      });
-    },
-    attr: function() {
-      return _(arr(arguments), function(attrName, value) {
-        var attrValue = this.getAttribute(attrName);
-        if(value) { this.setAttribute(attrName, value); }
-        return attrValue;
-      });
-    },
+function find(arr, cbFn, thisArg) {
+  return arr[findIndex(arr, cbFn, thisArg)];
+}
+
+function findIndex(arr, cbFn, thisArg) {
+  var s, keys;
+  if( isNumber(arr.length) ) {
+    for (s = 0; s < arr.length; s++) { 
+      if( cbFn.call(thisArg, arr[s], s, arr) ) { return s; }
+    }
+  } else {
+    keys = Object.keys(arr);
+    for (s = 0; s < keys.length; s++) {
+      if( cbFn.call(thisArg, arr[keys[s]], keys[s], arr) ) { return keys[s]; }
+    }
+  }
+  return -1;
+}
+
+  
+  function extend(dst) {
+    forEach(arguments, function(obj){
+      if (obj && obj !== dst) {
+        forEach(obj, function(value, key) {
+          dst[key] = value;
+        });
+      }
+    });
+    return dst;
+  }
+
+  var _D = scope.D = function(nodes, query) {
+    if( isElement(nodes) && query) {
+      nodes = _D.findAll(nodes, query);
+    }
+    return new D(nodes);
+  }
+
+  function D(nodes) {
+    mergeArray(nodes, this);
+  }
+
+  function css(element, name, value) {
+    if(isObject(name)) { extend(element.style, name); }
+    else { element.style[name] = value; }
+  }
+
+  function on(element, type, listener, useCapture) {
+    element.addEventListener(type, listener, useCapture);
+  }
+  
+  function off(element, type, listener, useCapture) {
+    element.removeEventListener(type, listener, useCapture);
+  }
+  
+  function bind(dst, name, value) {
+    return Object.defineProperty(dst, name, {
+      __proto__: null,
+      value: value
+    });
+  }
+  
+  function find(element, selector) {
+    return element.querySelector(selector);
+  }
+  
+  function findAll(element, selector) {
+    return element.querySelectorAll(selector);
+  }
+
+  function setAttr(element, name, value) {
+    var attrValue = element.getAttribute(name);
+    element.setAttribute(name, value);
+    return attrValue;
+  }
+
+  function attr(element, name, value) {
+    if(!element.getAttribute) { return ''; }
+
+    if(isArray(name)) {
+      for(value = 0; value < name.length; value++) {
+        name[value] = element.getAttribute(name[value]);
+      }
+      return name;
+    }
+
+    if(isObject(name)) {
+      for(value in name) {
+        name[value] = setAttr(element, value, name[value]);
+      }
+      return name;
+    }
+    
+    return isDefined(value)? setAttr(element, name, value) : 
+        ( element.getAttribute(name) || '');
+  }
+
+  function removeAttr(element) {
+    for(var a = 1; a < arguments.length; a++) {
+      element.removeAttribute(name[a]);
+    }
+  }
+
+  function addClass(element, name, noCheck) {
+    if(noCheck || !hasClass(element, name)) {
+      var classNames = attr(element, 'class');
+      classNames = classNames? classNames.split(/\s/g) : [];
+      classNames.push(name);
+      setAttr(element, 'class', classNames.join(' '));
+    }
+  }
+
+  function removeClass(element, name, noCheck) {
+    if(noCheck || hasClass(element, name)) {
+      var classNames = attr(element, 'class').split(/\s/g);
+      classNames.splice(classNames.indexOf(name), 1);
+      setAttr(element, 'class', classNames.join(' '));
+    }
+  }
+  
+  function hasClass(element, name) {
+    return !!~(' ' + attr(element, 'class').replace(/\s/g, ' ') + ' ')
+        .indexOf(' ' + name + ' ');
+  }
+  
+  function toggleClass(element, classNames) {
+    forEach(classNames.split(' '), function(name) {
+      (hasClass(element, name)? removeClass: addClass)(element, name, true);
+    });
+  }
+
+  extend(_D, {
+    on: on,
+    off: off,
+    css: css,
+    find: find,
+    findAll: findAll,
+    attr:attr,
+    removeAttr: removeAttr,
+    addClass: addClass,
+    removeClass: removeClass,
+    hasClass: hasClass,
+    toggleClass: toggleClass,
     extend: extend,
     isFunction: isFunction,
     isArray: isArray,
@@ -377,8 +417,53 @@ function extend(dst) {
     isRegExp: isRegExp,
     isElement: isElement,
     isDomObj: isDomObj
-  };
+  });
+  _D.forEach = forEach;
 
-  scope.D = extend(D, D.prototype);
-  scope.D.forEach = forEach;
+  D.prototype = [];
+
+  function mergeArray(args, result) {
+    return args && Array.prototype.push.apply((result = result || []), args) && result;
+  }
+
+  forEach(['on', 'off', 'css', 'addClass', 'removeClass', 'toggleClass', 'hasClass'], function(name) {
+    D.prototype[name] = function() {
+      var args = [undefined];
+      mergeArray(arguments, args);
+      
+      forEach(this, function(node) {
+        args[0] = node;
+        _D[name].apply(null, args);
+      });
+      return this;
+    }
+  });
+
+  forEach(['style', 'find', 'attr'], function(name) {
+    D.prototype[name] = function() {
+      var args = [undefined], result = [];
+      mergeArray(arguments, args);
+      
+      forEach(this, function(node) {
+        var out; args[0] = node;
+        if(out = _D[name].apply(null, args)) { result.push(out); }
+      });
+
+      return result.length === 1? result.pop(): result;
+    }
+  });
+
+  forEach(['findAll'], function(name) {
+    D.prototype[name] = function() {
+      var args = [undefined], result = [];
+      mergeArray(arguments, args);
+      
+      forEach(this, function(node) {
+        args[0] = node;
+        mergeArray(_D[name].apply(null, args), result);
+      });
+
+      return result;
+    }
+  });
 })(window);

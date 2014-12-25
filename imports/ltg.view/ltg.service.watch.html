@@ -15,7 +15,7 @@
           var $data = $compile.$data,
               wad = 0;
 
-          function $watch(element, watchfn, fn) {
+          function $watch(element, watchfn, fn, eqfn) {
             var $$watchs;
             if( D.isString(watchfn) ) { watchfn = $parse(watchfn); }
 
@@ -24,6 +24,8 @@
               $$watchs.push({
                 watchfn: watchfn,
                 fn: fn,
+                eq: eqfn,
+                recent: null,
                 $$wad: ++wad
               });
             }
@@ -31,6 +33,25 @@
             D.addClass(element, 'ltg-watch');
             return wad;
           }
+
+          function isCollectionEqual(src, dst) {
+            var isArr = false, key;
+            if( (src !== dst) || (D.isArray(src) !== (isArr = D.isArray(dst))) ||
+                  (isArr && src.length !== dst.length) ) { return false; }
+
+            for(key in dst) {
+              if(!src[key] || src[key] !== dst[key]) { return false; }
+            }
+
+            for(key in src) {
+              if(!dst[key] || src[key] !== dst[key]) { return false; }
+            }
+            return true;
+          }
+
+          $watch.$collection = function(element, watchfn, fn) {
+            $watch(element, watchfn, fn, isCollectionEqual);
+          };
 
           $watch.$rm = function(element, wad) {
             var $$watchs;

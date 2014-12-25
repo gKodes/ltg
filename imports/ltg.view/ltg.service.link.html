@@ -37,19 +37,17 @@
                     context = $context(node);
                 
                 if(nodeValue) {
-                  node.innerText = nodeValue(context); // var remove = 
                   if(nodeValue.watch) {
                     $watch(node, nodeValue, function(value) {
-                      node.innerText = value;
+                      arguments[3].innerHTML = value || '';
                     });
                   }
                 }
 
                 D.forEach(binds, function(getter, attrName) {
-                  node.setAttribute(attrName, getter(context));
                   if(getter.watch) {
                     $watch(node, getter, function(value) {
-                      node.setAttribute(attrName, value);
+                      arguments[3].setAttribute(attrName, value || '');
                     });
                   }
                 });

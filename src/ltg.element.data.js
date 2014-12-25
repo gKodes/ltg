@@ -6,22 +6,24 @@ var ltgUniqueStr, data = (function(uniqueStr) {
 
   function nextUid() { return ++uid; }
 
-  function data(element, key, value) {
+  function getContainer(element) {
     var cacheId = ltgCacheId(element);
-    if( !(isDefined(key) || isDefined(value)) ) { return edCache[cacheId]; }
-    var container = property(cacheId, {})(edCache);
-    
-    if( isObject(key) ) {
-      forEach(key, function(value, token) {
-        this[token] = value;
-      }, container);
-      return;
-    }
-
-    var inCache = container[key];
-    if(value) { container[key] = value; }
-    return inCache;
+    return edCache[cacheId] || ( edCache[cacheId] = {} );
   }
+
+  function data(element, key) {
+    var container = getContainer(element);
+    return (!isDefined(key) && container) || container[key];
+  }
+
+  data.set = function(element, key, value) {
+    var container = getContainer(element);
+    if( !isObject(key) ) { return (container[key] = value); }
+
+    for(var id in key) {
+      container[id] = key[id];
+    }    
+  };
 
   data.clean = function(element) {
     var cacheId = ltgCacheId(element);

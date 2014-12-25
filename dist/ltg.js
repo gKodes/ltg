@@ -101,18 +101,17 @@ DI.prototype = {
     return fn.apply(thisArg, fnArgs);
   }
 };
-var Provider = function(serviceCache) {
+function canInvoke(fn) {
+  return ( isArray(fn) && isFunction( last(fn) ) ) || isFunction(fn);
+}
+
+var Provider = function() {
   var providerSuffix = 'Provider',
       pError = fError('Provider'),
       configSeq = [], depth = [],
       INIT_STATE = {},
+      serviceCache = {'$provider': this},
       bootstrap;
-
-  serviceCache = extend(serviceCache, {'$provider': this});
-
-  function canInvoke(fn) {
-    return ( isArray(fn) && isFunction( last(fn) ) ) || isFunction(fn);
-  }
 
   this.provider = function(name, provider) {
     if(serviceCache[name] || serviceCache[name + providerSuffix]) {
@@ -174,9 +173,12 @@ var Provider = function(serviceCache) {
     bootstrap = true;
     this.invoke(onBoot);
   }
+
+  this.canInvoke = canInvoke;
 };
 
 Provider.prototype = DI.prototype; 
+Provider.canInvoke = canInvoke;
   //string.js
 
 /**
@@ -315,7 +317,7 @@ var bindingTypes = {
     return {
       configurable: false,
       get: function() { return this.getAttribute(attrName); },
-      set: function(value) { this.setAttribute(attrName, (storage = value)); }
+      set: function(value) { this.setAttribute(attrName, value); }
     }
   },
   '=': function prop(name) {
@@ -394,22 +396,24 @@ var ltgUniqueStr, data = (function(uniqueStr) {
 
   function nextUid() { return ++uid; }
 
-  function data(element, key, value) {
+  function getContainer(element) {
     var cacheId = ltgCacheId(element);
-    if( !(isDefined(key) || isDefined(value)) ) { return edCache[cacheId]; }
-    var container = property(cacheId, {})(edCache);
-    
-    if( isObject(key) ) {
-      forEach(key, function(value, token) {
-        this[token] = value;
-      }, container);
-      return;
-    }
-
-    var inCache = container[key];
-    if(value) { container[key] = value; }
-    return inCache;
+    return edCache[cacheId] || ( edCache[cacheId] = {} );
   }
+
+  function data(element, key) {
+    var container = getContainer(element);
+    return (!isDefined(key) && container) || container[key];
+  }
+
+  data.set = function(element, key, value) {
+    var container = getContainer(element);
+    if( !isObject(key) ) { return (container[key] = value); }
+
+    for(var id in key) {
+      container[id] = key[id];
+    }    
+  };
 
   data.clean = function(element) {
     var cacheId = ltgCacheId(element);
@@ -563,6 +567,16 @@ function invokeFnsWithRequires(element, fns, noShadow) {
   });
 }
 
+function elementAttrWatch(attrName, old, value) {
+  if(this[ltgUniqueStr]) {
+    var $attrs = data(this, '$attrs');
+
+    value = (value === null)? false : (value? value : true);
+    $attrs[camelCase(attrName)]  = value;
+    $attrs.$digest(camelCase(attrName), value, old);
+  }
+}
+
 /**
  * Element 
  * bindings - proporties which are exposed on the element instance
@@ -633,89 +647,85 @@ function element(name) {
     }
 
     extend(type, elementSetup);
+  }
 
-    var tag = Object.create((baseType || window['HTMLElement']).prototype,
-      propertyMap(type.binding));
+  var tag = Object.create((baseType || window['HTMLElement']).prototype,
+    propertyMap(type.binding));
 
-    /**
-     * Invoked when the tage is created, we call the compile methods &
-     * create instance of all the controllers for th element.
-     */
-    tag.createdCallback = function() {
-      var nodeData = {
-        '$attrs': new Attribute(this)
-      };
-      
-      if( !type.noShadow && this.createShadowRoot() ) {
-        //TODO: Support DOM elements
-        this.shadowRoot.innerHTML = (type.template || '');
-        nodeData['$shadow'] = new Shadow(this);
-      }
-
-      var locals = { $element: this };
-
-      /* NOTE:
-      * Compile the element where we make changes to the element,
-      * IMP: the element should not be replaced by the compler function
-      */
-      forEach(type.compile, function(compiler) {
-        compiler(this, nodeData.$attrs, nodeData.$shadow, function(transclude) {
-          //var recent = locals['$transclude'];           return recent;
-          locals['$transclude'] = transclude;
-        });
-      }, this);
-
-      extend(locals, nodeData);
-
-      forEach(type.controller, function(ctrlFn, name) { 
-        if(ctrlFn.extend && baseCtrlName) {
-          $provider.invoke(ctrlFn, locals, 
-            (nodeData['$' + name + 'Ctrl'] = 
-              nodeData['$' + baseCtrlName + 'Ctrl']) );
-        } else {
-          nodeData['$' + name + 'Ctrl'] = 
-            $provider.instantiate(ctrlFn, locals);
-        }
-      }, this);
-
-      data(this, nodeData);
+  /**
+   * Invoked when the tage is created, we call the compile methods &
+   * create instance of all the controllers for th element.
+   */
+  tag.createdCallback = function() {
+    var nodeData = {
+      '$attrs': new Attribute(this)
     };
+    
+    if( !type.noShadow && this.createShadowRoot() ) {
+      //TODO: Support DOM elements
+      this.shadowRoot.innerHTML = (type.template || '');
+      nodeData['$shadow'] = new Shadow(this);
+    }
 
-    /**
-     * Invoked when the node is attached to its parent
-     */
+    var locals = { $element: this };
+
+    /* NOTE:
+    * Compile the element where we make changes to the element,
+    * IMP: the element should not be replaced by the compler function
+    */
+    forEach(type.compile, function(compiler) {
+      compiler(this, nodeData.$attrs, nodeData.$shadow, function(transclude) {
+        //var recent = locals['$transclude'];           return recent;
+        locals['$transclude'] = transclude;
+      });
+    }, this);
+
+    extend(locals, nodeData);
+
+    forEach(type.controller, function(ctrlFn, name) { 
+      if(ctrlFn.extend && baseCtrlName) {
+        $provider.invoke(ctrlFn, locals, 
+          (nodeData['$' + name + 'Ctrl'] = 
+            nodeData['$' + baseCtrlName + 'Ctrl']) );
+      } else {
+        nodeData['$' + name + 'Ctrl'] = 
+          $provider.instantiate(ctrlFn, locals);
+      }
+    }, this);
+
+    data.set(this, nodeData);
+  };
+
+  /**
+   * Invoked when the node is attached to its parent
+   */
+  if(type.link.length) {
     tag.attachedCallback = function() {
       if(this[ltgUniqueStr]) { // Check to see if we had success in createdCallback
         invokeFnsWithRequires(this, type.link, type.noShadow);
       }
     };
+  }
 
-    /**
-     * Invoked when a attribute value changes
-     */
-    tag.attributeChangedCallback = function(attrName, old, value) {
-      if(this[ltgUniqueStr]) {
-        var $attrs = data(this, '$attrs');
+  /**
+   * Invoked when a attribute value changes
+   */
+  tag.attributeChangedCallback = elementAttrWatch;
 
-        value = (value === null)? false : (value? value : true);
-        $attrs[camelCase(attrName)]  = value;
-        $attrs.$digest(camelCase(attrName), value, old);
-      }
-    };
-
+  if(type.unlink.length) {
     tag.detachedCallback = function() {
       if(this[ltgUniqueStr]) {
         invokeFnsWithRequires(this, type.unlink, type.noShadow);
         data.clean(this); // Clean up the data
       }
     };
-
-    var regOptions = {'prototype': tag};
-    if( baseType ) { regOptions['extends'] = baseName; }
-
-    /* register the tag */
-    return document.registerElement(snakeCase(name), regOptions);
   }
+
+  var regOptions = {'prototype': tag};
+  if( baseType ) { regOptions['extends'] = baseName; }
+
+  /* register the tag */
+  return document.registerElement(snakeCase(name), regOptions);
 }
 
   // ltg.controller.js
@@ -734,27 +744,20 @@ function $controller(name, fn) {
 
 // If the name is an function directly invoke it
 
-$controller.invoke = function(name, resolvers) {
+$controller.invoke = function(name, resolvers, locals) {
   var resolved = {};
   forEach(resolvers, function(fn, name) {
-    this[name] = D.isFunction(fn)? $provider.invoke(fn, locals): fn;
-/*    if(this[name].then) {
-      this[name].then(function(result) {
-        resolved[name] = result;
-      });
-    }*/
+    this[name] = Provider.canInvoke(fn)? $provider.invoke(fn, locals): fn;
   }, resolved);
 
   return P.all(resolved).then(function(depends) {
     return P(function(resolve) {
-      // TODO: resolver should provide a link function which
-      // would help bind it to a node
       resolve(function linkCtrl(element, locals, bind) { 
+        locals = extend({}, locals, depends);
         locals['$element'] = element;
         //TODO: get the $attrs into the local stack
         // locals['$attrs'] = element;
-        var controller =
-            $provider.invoke(controllers[name], extend({}, locals, depends));
+        var controller = $provider.invoke(controllers[name], locals);
         if(bind) { data(element, name + 'Ctrl', controller); }
       });
     });
@@ -1073,10 +1076,8 @@ var P = (function() {
         return result.then.apply(result, arguments);
       }
       
-      if(isUndefined(status)) { callbacks.push(arguments); }
-      else if(arguments[status]) {
-        arguments[status].apply(null, result);
-      }
+      callbacks.push(arguments);
+      if(isDefined(status)) { invokeState(status).apply(null, result); }
 
       return this;
     };
@@ -1121,7 +1122,7 @@ var P = (function() {
 
       forEach(promises, function(value, pos) {
         if( value && isFunction(value.then) ) {
-          value.then(function() {
+          value.then(function(result) {
             results[pos] = result;
             if(!(--pending)) { resolve(results); }
           }, reject, notify);
@@ -1135,13 +1136,11 @@ var P = (function() {
   return P;
 })();
   var bootstrap = false,
-  $provider = new Provider({
-    //'$watch': $watch,
-    '$p': P,
-    '$controller': $controller
-  }),
+  $provider = new Provider(),
   runSeq = [],
   polyfills = ('import' in document.createElement('link'));
+  $provider.constant('$p', P);
+  $provider.constant('$controller', $controller);
 
   window.ltg = {
     factory: function(name, factoryFn) {
@@ -1190,7 +1189,13 @@ var P = (function() {
       camelCase: camelCase,
       snakeCase: snakeCase
     }
-  }
+  };
+
+  window.ltg.cloneNode = function(node, deep) {
+    return (window.ShadowDOMPolyfill && 
+      ShadowDOMPolyfill.cloneNode(node, deep)) ||
+        node.cloneNode(deep);
+  };
 
   window.ltg.provider.get = function(name) { return $provider.get(name); }
 })();

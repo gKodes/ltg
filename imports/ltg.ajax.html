@@ -18,10 +18,13 @@
                 //TODO: Setup the headers
                 if(!settings) { settings = {}; }
                 if(!settings.headers) { settings.headers = {}; }
-                D.forEach( D.findAll($element, ':scope > header'),
+                //NOTE: Cant use :scope > header as it wont work in IE9
+                D.forEach( $element.querySelectorAll('header'),
                   function(header) {
-                    settings.headers[D.attr(header, 'name')] =
-                      D.attr(header, 'value') || header.innerText;
+                    if( header.parentNode === $element ) {
+                      settings.headers[D.attr(header, 'name')] =
+                        D.attr(header, 'value') || header.innerText;
+                    }
                   }
                 );
 
@@ -39,7 +42,7 @@
         ltg.element('ajaxRequest', ['ltgRequest'], function() {
           return {
             noShadow: true,
-            bindings: {
+            binding: {
               '*': 'url',
               '=': 'promise'
             },
@@ -52,17 +55,21 @@
                   data: {}
                 }, form;
 
-                D.forEach( D.findAll($element, ':scope > header'),
+                D.forEach( $element.querySelectorAll('header'),
                   function(header) {
-                    settings.headers[D.attr(header, 'name')] =
-                      D.attr(header, 'value') || header.innerText;
+                    if( header.parentNode === $element ) {
+                      settings.headers[D.attr(header, 'name')] =
+                        D.attr(header, 'value') || header.innerText;
+                    }
                   }
                 );
 
-                D.forEach( D.findAll($element, ':scope > data'),
+                D.forEach( $element.querySelectorAll('data'),
                   function(data) {
-                    settings.data[D.attr(data, 'name')] =
-                      D.attr(data, 'value') || data.data || data.innerText;
+                    if( data.parentNode === $element ) {
+                      settings.data[D.attr(data, 'name')] =
+                        D.attr(data, 'value') || data.data || data.innerText;
+                    }
                   }
                 );
 
@@ -92,6 +99,8 @@
                     detail: element.promise });
                 }
               });
+
+              if(element.send === 'true') { element.send = !(element.send = false); }
             }]
           };
        }); 
@@ -99,12 +108,12 @@
     </script>
     <script>
       (function() {
-        ltg.element('ajaxGet', ['ajaxRequest'], function() {});
+        ltg.element('ajaxGet', ['ajaxRequest'], function() { return {}; });
       })();
     </script>
     <script>
       (function() {
-        ltg.element('ajaxPost', ['ajaxRequest'], function() {});
+        ltg.element('ajaxPost', ['ajaxRequest'], function() { return {}; });
       })();
     </script>
   </body>

@@ -11,17 +11,20 @@
        */
       (function(){
         'use strict';
-        var BINDING_VAR_REGEX = /\{\^?\{[a-z]\S*\}\}/ig,
+        var BINDING_VAR_REGEX = /\{\^?\{[a-z]\S*[^\}]*\}\}/ig,
             TEXT_NODE = 3;
 
         function splitByExpr(expr) {
           var index = 0, result = [];
           expr.replace(BINDING_VAR_REGEX, function(match, location) {
-            if(location - index > 0) { result.push(expr.substring(index, location)); }
+            if(location - index > 0) {
+              result.push(expr.substring(index, location));
+            }
             result.push(match);
             index = location + match.length;
             return match;
           });
+          if(index !== expr.length) { result.push(expr.substr(index)); }
           return result;
         }
 
@@ -49,72 +52,76 @@
           }
         );
 
-        ltg.config(['$data', '$parseProvider', function(data, $parseProvider) {
-          function watchfn(expr) {
-            var watchfn = $parse(expr);
-            watchfn.watch = expr[1] !== '^';
-            watchfn.expr = expr;
-            return watchfn;
-          }
+        ltg.provider('$compile', function() {
+          var $$provider = this;
 
-          function boundNodeValue(node, watchfn, expr) {
-            $data.set(node, '$$bound.nodeValue', watchfn);
-            return node;
-          }
+          this.$get = ['$data', '$parse', function(data, $parse) {
+            function watchfn(expr) {
+              var watchfn = $parse(expr);
+              watchfn.watch = expr[1] !== '^';
+              watchfn.expr = expr;
+              return watchfn;
+            }
 
-          function $compile(element) {
-            var nodeItr = new BindingNodes(element), node;
+            function boundNodeValue(node, watchfn, expr) {
+              $data.set(node, '$$bound.nodeValue', watchfn);
+              return node;
+            }
 
-            while(node = nodeItr.iterateNext()) {
-              var attributes = node.attributes,
-                  children = node.childNodes,
-                  exp;
+            function $compile(element) {
+              var nodeItr = new BindingNodes(element), node;
 
-              if(attributes.length) {
-                var $$bound = {};
+              while(node = nodeItr.iterateNext()) {
+                var attributes = node.attributes,
+                    children = node.childNodes,
+                    exp;
 
-                for(var a = 0; a < attributes.length; a++) {
-                  if( attributes[a].value.match(/^\{\^?\{/) ) {
-                    $$bound[attributes[a].name] = watchfn(attributes[a].value);
-                  }
-                };
+                if(attributes.length) {
+                  var $$bound = {};
 
-                $data.set(node, '$$bound', $$bound);
-              }
-
-              for(var c = 0; c < children.length; c++) {
-                var refNode = children[c], segments, segment;
-                if(refNode.nodeType === TEXT_NODE &&
-                      (segments = splitByExpr(refNode.nodeValue)) && segments.length) {
-
-                  if(segments.length === children.length) {
-                    boundNodeValue(node, watchfn(refNode.nodeValue), refNode.nodeValue);
-                    break;
-                  }
-
-                  do {
-                    if( (segment = segments.shift()) ) {
-                      if( segment.match(/^\{\^?\{/) ) {
-                        node.insertBefore(boundNodeValue(
-                            document.createElement('span'), watchfn(segment), segment),
-                          refNode);
-                      } else {
-                        node.insertBefore(
-                          document.createTextNode(segment), refNode);
-                      }
+                  for(var a = 0; a < attributes.length; a++) {
+                    if( attributes[a].value.match(/^\{\^?\{/) ) {
+                      $$bound[attributes[a].name] = watchfn(attributes[a].value);
                     }
-                  } while(segments.length && ++c);
+                  };
 
-                  node.removeChild(refNode);
+                  $data.set(node, '$$bound', $$bound);
+                }
+
+                for(var c = 0; c < children.length; c++) {
+                  var refNode = children[c], segments, segment;
+                  if(refNode.nodeType === TEXT_NODE &&
+                        (segments = splitByExpr(refNode.nodeValue)) && segments.length) {
+
+                    if(segments.length === children.length) {
+                      boundNodeValue(node, watchfn(refNode.nodeValue), refNode.nodeValue);
+                      break;
+                    }
+
+                    do {
+                      if( (segment = segments.shift()) ) {
+                        if( segment.match(/^\{\^?\{/) ) {
+                          node.insertBefore(boundNodeValue(
+                              document.createElement('span'), watchfn(segment), segment),
+                            refNode);
+                        } else {
+                          node.insertBefore(
+                            document.createTextNode(segment), refNode);
+                        }
+                      }
+                    } while(segments.length && ++c);
+
+                    node.removeChild(refNode);
+                  }
                 }
               }
-            }
-          };
+            };
 
-          var $data = $compile.$data = data('ltg-bound'),
-              $parse = $parseProvider.$get();
+            var $data = $compile.$data = data('ltg-bound');
+            $$provider.$get = function() { return $compile; }
 
-          ltg.constant('$compile', $compile);
+            return $compile;
+          }];
 
           ltg.constant('$boundNodes', function(element) {
             var nodes = [];
@@ -122,7 +129,9 @@
             nodes.push.apply(nodes, element.querySelectorAll('[ltg-bound]'));
             return nodes;
           });
-        }]);
+        })
+
+        ltg.config();
       })();
     </script>
   </body>
